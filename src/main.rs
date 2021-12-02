@@ -1,5 +1,4 @@
 use client::get_client;
-use solana_program::pubkey::Pubkey;
 use solana_sdk::account::Account;
 use solana_transaction_status::UiTransactionEncoding;
 

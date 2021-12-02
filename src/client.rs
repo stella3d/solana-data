@@ -1,6 +1,6 @@
-use std::{collections::HashSet, slice::Chunks, sync::Arc};
+use std::{collections::HashSet, sync::Arc};
 
-use solana_client::{self, rpc_client::RpcClient, client_error::{ClientError, reqwest::Client}};
+use solana_client::{self, rpc_client::RpcClient, client_error::{ClientError}};
 use solana_program::pubkey::Pubkey;
 use solana_sdk::{transaction::Transaction, account::Account};
 use solana_transaction_status::EncodedTransactionWithStatusMeta;
