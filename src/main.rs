@@ -1,13 +1,14 @@
 use client::get_client;
-use solana_sdk::transaction::Transaction;
+use solana_program::pubkey::Pubkey;
+use solana_sdk::account::Account;
 use solana_transaction_status::UiTransactionEncoding;
-
-use crate::client::{ClientWrapper};
 
 pub mod client;
 
 
 fn test_client() {
+
+
     let mut rpc_wrapper = get_client("");
 
     let slot_res= rpc_wrapper.rpc.get_slot();
@@ -39,15 +40,53 @@ fn test_client() {
 
             if rpc_wrapper.all_tx_accounts() > 0 {
                 rpc_wrapper.tx_accounts.iter().for_each(|a| {
-                    println!("\nacct: {:?}", a);
+                    let owner_str = a.owner.to_string();
+                    if a.data.len() <= 0  {
+                        if owner_str != SPECIAL_OWNER_NAMES[0] {
+                            println!("\nEMPTY account:\n  {:?}", a);
+                        }
+                    }
+                    else if owner_str.ends_with("1111") {
+                        match owner_str {
+                            o if o.starts_with("Vote") => {
+                                println!("\nVote account:\n  {:?}", a);
+                            },
+                            o if o.starts_with("Sysvar") => {
+                                println!("\nSysvar account:\n  {:?}", a);
+                            },
+                            o if o.starts_with("NativeLoader") => {
+                                println!("\nNativeLoader account:\n  {:?}", a);
+                            },
+                            o if o.starts_with("BPFLoader") => {
+                                println!("\nBPFLoader account:\n  {:?}", a);
+                            },
+                            _ => {}
+                        }
+                    }
+                    else {
+                        match a {
+                            Account { executable: true, .. } => {
+                                println!("\nEXECUTABLE account:\n  {:?}", a);
+                            },
+                            _ => {},
+                        }
+                    }
                 })
             }
         },
-        Err(e) => { 
-            eprintln!("{}", e);
-        }
+        Err(e) => { eprintln!("{}", e); }
     }; 
 }
+
+static SPECIAL_OWNER_NAMES: [&str; 5] = 
+[
+    "11111111111111111111111111111111",
+    "NativeLoader1111111111111111111111111111111",
+    "BPFLoader2111111111111111111111111111111111",
+    "Sysvar1111111111111111111111111111111111111",
+    "Vote111111111111111111111111111111111111111"
+];
+
 
 fn main() {
     println!("\nStarting Solana RPC client test\n");
