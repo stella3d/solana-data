@@ -46,6 +46,7 @@ impl ClientWrapper {
     pub fn get_accounts(&mut self) -> Option<&Vec<Account>> {
         self.tx_accounts.clear();
 
+        // only 100 accts allowed per RPC request
         let chunks = self.t_key_vec.chunks(100);
         chunks.for_each(|c| {
             let c_accts = self.rpc.get_multiple_accounts(&c);
@@ -98,17 +99,6 @@ impl ClientWrapper {
     }
 }
 
-fn push_fmap<S, D>(src: Vec<Option<S>>, mut dest: Vec<D>, 
-    filter_map: fn(&Option<S>) -> Option<D>) 
-{
-    src.iter().for_each(|s| {
-        match filter_map(s) {
-            Some(d) => dest.push(d),
-            None => {},
-        }
-    });
-}
-
 pub fn get_client (rpc_url: &str) -> ClientWrapper {
     let mut rpc = rpc_url;
     if rpc_url.is_empty() {
@@ -124,51 +114,8 @@ pub fn get_client (rpc_url: &str) -> ClientWrapper {
     }
 }
 
-
 pub fn get_tx_accounts(rpc: &RpcClient, tx: Transaction) -> 
     Result<Vec<Option<Account>>, ClientError> 
 {
     rpc.get_multiple_accounts(&tx.message.account_keys)
 }
-
-/*
-pub fn all_tx_accounts(rpc: &RpcClient, txs: &[Transaction]) -> 
-    Result<Vec<Option<Account>>, ClientError> 
-{
-    let mut keys = HashSet::<Pubkey>::new();
-    txs.iter().for_each(|tx| {
-        tx.message.account_keys.iter().for_each(|pk| { 
-            // TODO - combine multiple responses into one
-            keys.insert(*pk); 
-        })
-    });
-
-    let mut request_count = keys.len() / 100;
-    if keys.len() % 100 != 0 {
-        request_count += 1;
-    }
-
-    println!("account number: {}", keys.len());
-    println!("request count for all txs: {}", request_count);
-
-    let keys_vec: Vec<Pubkey> = keys.into_iter().collect();
-    // only 100 accounts allowed per request, make multiple if needed
-    if keys_vec.len() > 100 {
-        let mut results = Vec::<Option<Account>>::with_capacity(keys_vec.len());
-        let chunks = keys_vec.chunks(100);
-        chunks.for_each(|c| {
-            let c_accts = rpc.get_multiple_accounts(&c);
-            match c_accts {
-                Ok(mut accts) => {
-                    results.append(&mut accts);
-                },
-                Err(_) => {},
-            }
-        });
-        Ok(results)
-    }
-    else {
-        rpc.get_multiple_accounts(&keys_vec)
-    }
-}
-*/
