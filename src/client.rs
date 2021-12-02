@@ -99,14 +99,14 @@ impl ClientWrapper {
         });
     }
 
-    pub fn get_block_details(&mut self, slots: &Vec<Slot>, callback: fn(&(Slot, Option<&EncodedConfirmedBlock>))) 
-    {
+    pub fn get_block_details(&mut self, slots: &Vec<Slot>, callback: fn(&(Slot, Option<&EncodedConfirmedBlock>))) -> Slot {
         let len = (*slots).len();
-        if len > 32 || len < 1 {
-            println!("only ranges 1-32 in length supported right now, input length:  {}", len);
-            return;
+        if len > 256 || len < 1 {
+            println!("only ranges 1-100 in length supported right now, input length:  {}", len);
+            return 0;
         }
 
+        let mut last_slot:u64 = 0;
         for s in slots {
             println!("requesting slot {}", s);
             let r = self.rpc.get_block_with_encoding(*s, UiTransactionEncoding::Base64);
@@ -123,39 +123,24 @@ impl ClientWrapper {
                     eprintln!("{}", e);
                 },
             }
+            last_slot = *s;
         }
+
+        last_slot
     }
 
     fn get_request_delay(count: usize) -> Duration {
         match count {
-            c if c >= 26 => TIME_800_MS,
-            c if c >= 20 => TIME_650_MS,
-            c if c >= 14 => TIME_500_MS,
-            c if c >= 8 => TIME_400_MS,
-            c if c >= 4 => TIME_300_MS,
-            _ => TIME_200_MS
+            c if c >= 25 => TIME_150_MS,
+            _ => TIME_100_MS
         }
     }
 }
-
-struct SlotBlock {
-    pub slot: Slot,
-    pub block: EncodedConfirmedBlock
-}
-
-impl SlotBlock {
-    pub fn new(s: Slot, b: EncodedConfirmedBlock) -> SlotBlock {
-        SlotBlock { slot: s, block: b }
-    }
-}
-
-//const TIME_100_MS: Duration = time::Duration::from_millis(10);
-const TIME_200_MS: Duration = time::Duration::from_millis(200);
-const TIME_300_MS: Duration = time::Duration::from_millis(300);
-const TIME_400_MS: Duration = time::Duration::from_millis(400);
-const TIME_500_MS: Duration = time::Duration::from_millis(500);
-const TIME_650_MS: Duration = time::Duration::from_millis(650);
-const TIME_800_MS: Duration = time::Duration::from_millis(800);
+//const TIME_50_MS: Duration = time::Duration::from_millis(100);
+const TIME_100_MS: Duration = time::Duration::from_millis(100);
+const TIME_150_MS: Duration = time::Duration::from_millis(150);
+const TIME_160_MS: Duration = time::Duration::from_millis(160);
+//const TIME_500_MS: Duration = time::Duration::from_millis(500);
 
 pub fn get_client (rpc_url: &str) -> ClientWrapper {
     let mut rpc = rpc_url;
