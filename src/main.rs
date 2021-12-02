@@ -1,7 +1,8 @@
 use client::get_client;
+use solana_sdk::transaction::Transaction;
 use solana_transaction_status::UiTransactionEncoding;
 
-use crate::client::get_tx_accounts;
+use crate::client::{get_tx_accounts, all_tx_accounts};
 
 pub mod client;
 
@@ -21,7 +22,7 @@ fn test_client() {
         return; 
     }
 
-    let get_block_res = rpc.get_block_with_encoding(slot, UiTransactionEncoding::Base58);
+    let get_block_res = rpc.get_block_with_encoding(slot, UiTransactionEncoding::Base64);
     match get_block_res {
         Ok(b) => {
             println!("slot:  {}", slot);
@@ -29,31 +30,37 @@ fn test_client() {
             println!("rewards:\n{:?}\n", b.rewards);
 
             println!("TRANSACTIONS:\n");
-            let tx_len = b.transactions.len();
-            let begin_get_accts = tx_len - 4;
-            let mut idx = 0;
 
-            b.transactions.iter().for_each(|tx| {
-                match tx.transaction.decode() {
-                    Some(decoded_tx) => {
-                        println!("\nTX (DECODED):\n{:?}\n", decoded_tx);
+            let decoded: Vec<Transaction> = b.transactions.iter()
+                .map(|etx| {
+                    etx.transaction.decode()
+                })
+                .filter(|opt| opt.is_some())
+                .map(|opt| opt.unwrap())
+                .collect();
 
-                        if idx > begin_get_accts {
-                            let tx_accts = get_tx_accounts(&rpc, decoded_tx);
-                            match tx_accts {
-                                Ok(txa) => println!("\ntx accounts:\n{:?}\n", txa),
-                                Err(e) => eprintln!("{}", e),
-                            }
-                        }
-                    },
-                    None => println!("\nTX:\n{:?}\n", tx.transaction),
-                }
-                idx += 1;
+            decoded.iter().for_each(|tx|{
+                println!("\nTX (decoded):\n{:?}\n", tx);
             });
+
+            let all_tx_accts = all_tx_accounts(&rpc, &decoded);
+            match all_tx_accts {
+                Ok(accts) => {
+                    //println!("\nall tx accounts: {:?}\n", accts)
+                    accts.iter().for_each(|a| {
+                        match a {
+                            Some(val) => println!("\nacct: {:?}\n", *val),
+                            None => {},
+                        }
+                    });
+                },
+                Err(e) => eprintln!("{}", e),
+            }
         },
         Err(e) => { 
             eprintln!("{}", e);
         }
+        
     }; 
 
 }

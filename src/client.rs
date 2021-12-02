@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use solana_client::{self, rpc_client::RpcClient, client_error::ClientError};
 use solana_program::pubkey::Pubkey;
 use solana_sdk::{transaction::Transaction, account::Account};
@@ -21,4 +23,22 @@ pub fn get_tx_accounts(rpc: &RpcClient, tx: Transaction) ->
     Result<Vec<Option<Account>>, ClientError> 
 {
     rpc.get_multiple_accounts(&tx.message.account_keys)
+}
+
+pub fn all_tx_accounts(rpc: &RpcClient, txs: &[Transaction]) -> 
+    Result<Vec<Option<Account>>, ClientError> 
+{
+    let mut keys = HashSet::<Pubkey>::new();
+    txs.iter().for_each(|tx| {
+        tx.message.account_keys.iter().for_each(|pk| { 
+            // TODO - combine multiple responses into one
+            if keys.len() < 100 {
+                keys.insert(*pk); 
+            }
+        })
+    });
+
+    let keys_vec: Vec<Pubkey> = keys.into_iter().collect();
+
+    rpc.get_multiple_accounts(&keys_vec)
 }
