@@ -1,9 +1,10 @@
-use std::{collections::HashSet, sync::Arc};
+use core::time;
+use std::{collections::HashSet, sync::Arc, time::Duration, thread, ops::Range};
 
 use solana_client::{self, rpc_client::RpcClient, client_error::{ClientError}};
-use solana_program::pubkey::Pubkey;
+use solana_program::{pubkey::Pubkey, clock::Slot};
 use solana_sdk::{transaction::Transaction, account::Account};
-use solana_transaction_status::EncodedTransactionWithStatusMeta;
+use solana_transaction_status::{EncodedTransactionWithStatusMeta, UiTransactionEncoding, EncodedConfirmedBlock};
 
 
 pub static DEVNET_RPC: &str = "https://api.devnet.solana.com";
@@ -81,7 +82,7 @@ impl ClientWrapper {
 
         match self.get_accounts() {
             Some(av) => {
-                for a in av { println!("\naccount:    {:?}\n", a); }
+                //for a in av { println!("\naccount:    {:?}\n", a); }
                 av.len()
             },
             None => 0
@@ -97,7 +98,64 @@ impl ClientWrapper {
             }
         });
     }
+
+    pub fn get_block_details(&mut self, slots: &Vec<Slot>, callback: fn(&(Slot, Option<&EncodedConfirmedBlock>))) 
+    {
+        let len = (*slots).len();
+        if len > 32 || len < 1 {
+            println!("only ranges 1-32 in length supported right now, input length:  {}", len);
+            return;
+        }
+
+        for s in slots {
+            println!("requesting slot {}", s);
+            let r = self.rpc.get_block_with_encoding(*s, UiTransactionEncoding::Base64);
+            
+            // should be removed when not dealing with rate limiting
+            thread::sleep(Self::get_request_delay(len));
+
+            match r {
+                Ok(ecb) => {
+                    let opt = Some(&ecb);
+                    callback(&(*s, opt));
+                },
+                Err(e) => {
+                    eprintln!("{}", e);
+                },
+            }
+        }
+    }
+
+    fn get_request_delay(count: usize) -> Duration {
+        match count {
+            c if c >= 26 => TIME_800_MS,
+            c if c >= 20 => TIME_650_MS,
+            c if c >= 14 => TIME_500_MS,
+            c if c >= 8 => TIME_400_MS,
+            c if c >= 4 => TIME_300_MS,
+            _ => TIME_200_MS
+        }
+    }
 }
+
+struct SlotBlock {
+    pub slot: Slot,
+    pub block: EncodedConfirmedBlock
+}
+
+impl SlotBlock {
+    pub fn new(s: Slot, b: EncodedConfirmedBlock) -> SlotBlock {
+        SlotBlock { slot: s, block: b }
+    }
+}
+
+//const TIME_100_MS: Duration = time::Duration::from_millis(10);
+const TIME_200_MS: Duration = time::Duration::from_millis(200);
+const TIME_300_MS: Duration = time::Duration::from_millis(300);
+const TIME_400_MS: Duration = time::Duration::from_millis(400);
+const TIME_500_MS: Duration = time::Duration::from_millis(500);
+const TIME_650_MS: Duration = time::Duration::from_millis(650);
+const TIME_800_MS: Duration = time::Duration::from_millis(800);
 
 pub fn get_client (rpc_url: &str) -> ClientWrapper {
     let mut rpc = rpc_url;

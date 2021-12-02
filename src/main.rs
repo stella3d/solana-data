@@ -1,16 +1,17 @@
 use client::get_client;
 use solana_sdk::account::Account;
-use solana_transaction_status::UiTransactionEncoding;
+use solana_transaction_status::{UiTransactionEncoding, EncodedConfirmedBlock};
 
 pub mod client;
+pub mod files;
 
 
 fn test_client() {
 
 
-    let mut rpc_wrapper = get_client("");
+    let mut client = get_client("");
 
-    let slot_res= rpc_wrapper.rpc.get_slot();
+    let slot_res= client.rpc.get_slot();
     let slot = match slot_res {
         Ok(slot) => slot,
         Err(e) => { 
@@ -22,23 +23,41 @@ fn test_client() {
         return; 
     }
 
-    let get_block_res = rpc_wrapper.rpc.get_block_with_encoding(slot, UiTransactionEncoding::Base64);
+    let get_block_res = client.rpc.get_block_with_encoding(slot, UiTransactionEncoding::Base64);
+
+    let slot_count = 8;
+    let slots = client.rpc.get_blocks_with_limit(slot - slot_count, 32).unwrap();
+    println!("\n{} slots to request...\n", slots.len());
+
+    client.get_block_details(&slots,
+|(slot, ecb)| {
+            match *ecb {
+                Some(b) => {
+                    //println!("write range block file:  slot_{}", slot);
+                    files::write_json_encoded_block(*slot, b);
+                },
+                None => {},
+            }
+        }); 
+
     match get_block_res {
         Ok(b) => {
+            files::write_json_encoded_block(slot, &b);
+
             println!("slot:  {}", slot);
             println!("time:  {:?} , hash:  {:?}", b.block_time, b.blockhash);
             println!("rewards:\n{:?}\n", b.rewards);
-
             println!("TRANSACTIONS:\n");
 
-            rpc_wrapper.decode_txs(b.transactions);
+            client.decode_txs(b.transactions);
 
-            rpc_wrapper.txs.iter().for_each(|tx|{
-                println!("\nTX (decoded):\n{:?}\n", tx);
+            client.txs.iter().for_each(|tx|{
+                //println!("\nTX (decoded):\n{:?}\n", tx);
             });
 
-            if rpc_wrapper.all_tx_accounts() > 0 {
-                rpc_wrapper.tx_accounts.iter().for_each(|a| {
+            if client.all_tx_accounts() > 0 {
+                client.tx_accounts.iter().for_each(|a| {
+                    return;
                     let owner_str = a.owner.to_string();
                     if a.data.len() <= 0  {
                         if owner_str != SPECIAL_OWNERS[0] {

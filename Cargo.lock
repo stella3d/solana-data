@@ -2486,6 +2486,8 @@ dependencies = [
 name = "sol-data"
 version = "0.1.0"
 dependencies = [
+ "serde",
+ "serde_json",
  "solana-client",
  "solana-program",
  "solana-sdk",
