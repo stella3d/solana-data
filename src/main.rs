@@ -41,7 +41,7 @@ fn test_client() {
                 rpc_wrapper.tx_accounts.iter().for_each(|a| {
                     let owner_str = a.owner.to_string();
                     if a.data.len() <= 0  {
-                        if owner_str != SPECIAL_OWNER_NAMES[0] {
+                        if owner_str != SPECIAL_OWNERS[0] {
                             println!("\nEMPTY account:\n  {:?}", a);
                         }
                     }
@@ -77,11 +77,16 @@ fn test_client() {
     }; 
 }
 
-static SPECIAL_OWNER_NAMES: [&str; 5] = 
+static SPECIAL_EXECUTABLE_OWNERS: [&str; 3] = 
+[
+    "NativeLoader1111111111111111111111111111111",
+    "BPFLoaderUpgradeab1e11111111111111111111111",
+    "BPFLoader2111111111111111111111111111111111",
+];
+
+static SPECIAL_OWNERS: [&str; 3] = 
 [
     "11111111111111111111111111111111",
-    "NativeLoader1111111111111111111111111111111",
-    "BPFLoader2111111111111111111111111111111111",
     "Sysvar1111111111111111111111111111111111111",
     "Vote111111111111111111111111111111111111111"
 ];
