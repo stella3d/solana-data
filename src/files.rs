@@ -4,11 +4,11 @@ use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use solana_transaction_status::EncodedConfirmedBlock;
 use serde_json;
 
-use crate::util::timer;
+use crate::util::{timer, log_err_none};
 
 const BLOCKS_DIR: &str = "blocks/json";
 
-fn log_err<E: Debug + Display>(e: E) { eprintln!("{}", e); }
+
 
 pub fn test_block_loads() {
     println!("\ntesting typed load of .json files...");
@@ -18,14 +18,20 @@ pub fn test_block_loads() {
     let par_time = timer(|| {
         blocks = load_blocks_json_par(BLOCKS_DIR);
     });
-    println!("{} .json blocks loaded (parallel), {:3} seconds", blocks.len(), par_time.as_secs_f32());
+
+    let ms_per = par_time.as_millis() as f64 / blocks.len() as f64;
+    println!("{} .json blocks loaded (parallel): {:3} seconds, {:2} milliseconds per file", 
+        blocks.len(), par_time.as_secs_f32(), ms_per);
+
     blocks.clear();
 
     let dir = fs::read_dir(BLOCKS_DIR).unwrap();
     let seq_time = timer(|| {
         blocks = load_blocks_json(dir);
     });
-    println!("{} .json blocks loaded (sequential), {:3} seconds", blocks.len(), seq_time.as_secs_f32());
+
+    let ms_per_seq = seq_time.as_millis() as f64 / blocks.len() as f64;
+    println!("{} .json blocks loaded (sequential): {:3} seconds, {}ms per file", blocks.len(), seq_time.as_secs_f32(), ms_per_seq);
 }
 
 fn dir_file_paths(rd: ReadDir) -> Vec<PathBuf> {
@@ -34,10 +40,7 @@ fn dir_file_paths(rd: ReadDir) -> Vec<PathBuf> {
             Ok(entry) => {
                 Some(entry.path())
             },
-            Err(e) => { 
-                log_err(e); 
-                None 
-            }
+            Err(e) => log_err_none(e) 
         }
     })
     .filter_map(|o| o)
@@ -94,16 +97,10 @@ pub fn load_block_json<P: AsRef<Path>>(path: P) -> Option<EncodedConfirmedBlock>
         Ok(data) => {
             match serde_json::from_slice::<EncodedConfirmedBlock>(&data) {
                 Ok(block) => Some(block),
-                Err(e) => {
-                    eprintln!("{}", e);
-                    None
-                }
+                Err(e) => log_err_none(e)
             }
         },
-        Err(e) => {
-            eprintln!("{}", e);
-            None
-        },
+        Err(e) => log_err_none(e)
     }
 }
 

@@ -1,4 +1,5 @@
 use std::time::{Duration, Instant};
+use std::fmt::{Debug, Display};
 
 pub struct TimedData<T> {
     pub time: Duration,
@@ -17,3 +18,7 @@ pub fn time_run<T: FnOnce() -> R, R>(func: T) -> TimedData<R> {
     let returned = func();
     return TimedData { time: start.elapsed(), data: returned }
 }
+
+pub fn log_err<E: Debug + Display>(e: E) { eprintln!("{}", e); }
+
+pub fn log_err_none<T, E: Debug + Display>(e: E) -> Option<T> { eprintln!("{}", e); None }
