@@ -6,8 +6,11 @@ use solana_program::clock::Slot;
 use solana_sdk::account::Account;
 use solana_transaction_status::{UiTransactionEncoding, EncodedConfirmedBlock};
 
+use crate::{files::test_block_loads, util::timer};
+
 pub mod client;
 pub mod files;
+pub mod util;
 
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
@@ -101,6 +104,7 @@ fn loop_task(total_time: Duration, loop_fn: fn()) {
     println!("loop task finished after: {} milliseconds", start.elapsed().as_millis());
 }
 
+/*
 static SPECIAL_EXECUTABLE_OWNERS: [&str; 3] = 
 [
     "NativeLoader1111111111111111111111111111111",
@@ -114,11 +118,17 @@ static SPECIAL_OWNERS: [&str; 3] =
     "Sysvar1111111111111111111111111111111111111",
     "Vote111111111111111111111111111111111111111"
 ];
-
+*/
 
 fn main() {
     println!("\nStarting Solana RPC client test\n");
-
+    /* 
     let loop_duration = Duration::from_secs(60 * 60 * 4);
     scrape_loop(loop_duration);
+    */
+
+    test_block_loads();
+
+    thread::sleep(Duration::from_secs(600));
+    scrape_loop(Duration::from_millis(10));
 }

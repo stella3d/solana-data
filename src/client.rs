@@ -112,7 +112,7 @@ impl ClientWrapper {
             let r = self.rpc.get_block_with_encoding(*s, UiTransactionEncoding::Base64);
             
             // should be removed when not dealing with rate limiting
-            thread::sleep(Self::get_request_delay(len));
+            //thread::sleep(Self::get_request_delay(len));
 
             match r {
                 Ok(ecb) => {
