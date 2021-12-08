@@ -13,8 +13,14 @@ pub fn process_block_stream(block_files: &[PathBuf]) {
 
     let acct_set = find_account_set_stream(block_files);
 
-    acct_set.iter().for_each(|t| {
-        if *t.1 > 1 {
+    println!("done processing, converting to vec & sorting...");
+
+
+    let mut accts_vec:Vec<(Pubkey, u32)> = acct_set.iter().map(|e| (*e.0, *e.1)).collect();
+    accts_vec.sort_by(|e, other| e.1.cmp(&other.1));
+
+    accts_vec.iter().for_each(|t| {
+        if t.1 > 1 {
             println!("public key: {} , entries: {}", t.0, t.1);
         }
     });
@@ -24,10 +30,6 @@ pub fn process_block_stream(block_files: &[PathBuf]) {
 
 
 pub fn process_blocks(blocks: &[EncodedConfirmedBlock]) {
-
-    let acct_set = find_account_set(blocks);
-
-    thread::sleep(Duration::from_secs(120));
 
     let single_tx_blocks: Vec<&EncodedConfirmedBlock> =
         blocks.par_iter().filter_map(|b| {
@@ -92,10 +94,14 @@ pub fn process_reduce_files<T, C: Send>(paths: &[PathBuf],
     reduce: fn(Vec<C>) -> C) 
     -> C
 {
-    let chunk_size = min(1024, paths.len() / 32);
+    let chunk_size = min(1024, paths.len() / 64);
     let path_chunks: Vec<&[PathBuf]> = paths.chunks(chunk_size).collect();
-    let intermediates: Vec<C> = path_chunks.par_iter().map(|&chunk| {
-        let typed: Vec<T> = (chunk).iter().map(load_file).collect();
+    println!("{} chunks of length {}", path_chunks.len(), chunk_size);
+
+    let intermediates: Vec<C> = path_chunks.par_iter()
+    .map(|&chunk| {
+        println!("start chunk");
+        let typed: Vec<T> = chunk.iter().map(load_file).collect();
         each_chunk(typed.as_slice())
     }).collect();
 
