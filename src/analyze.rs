@@ -79,8 +79,14 @@ pub fn decode_txs_map(e_txs: &Vec<EncodedTransactionWithStatusMeta>) -> Vec<Tran
     }).collect::<Vec<Transaction>>()
 }
 
-
-pub fn stream_process_files<T, C: Send>(paths: &[PathBuf], 
+/* 
+    given a set of paths, chunk them
+    then, per chunk, serially:
+    * load all files & parse into a data type 'T' (parallel)
+    * run 'each_chunk' on the chunk (parallelism depends on each_chunk implementation)
+    * reduce all the chunks to one single answer of the same type 'C'
+*/
+pub fn process_reduce_files<T, C: Send>(paths: &[PathBuf], 
     load_file: fn(&PathBuf) -> T, 
     each_chunk: fn(&[T]) -> C, 
     reduce: fn(Vec<C>) -> C) 
@@ -96,33 +102,36 @@ pub fn stream_process_files<T, C: Send>(paths: &[PathBuf],
     reduce(intermediates)
 }
 
+fn add_or_increment(account: &Pubkey, hm: &mut HashMap<Pubkey, u32>) {
+    match hm.get_mut(account) {
+        Some(tx_count) => *tx_count = *tx_count + 1,
+        None => { hm.insert(*account, 1); },
+    };
+}
+
 pub fn find_account_set_stream(block_files: &[PathBuf]) -> HashMap<Pubkey, u32> {
-    stream_process_files::<EncodedConfirmedBlock, HashMap<Pubkey, u32>>(block_files, 
+    process_reduce_files::<EncodedConfirmedBlock, HashMap<Pubkey, u32>>(block_files, 
     |p| { load_block_json_unwrap(p) },
+        // for each chunk, count occurences (parallel)
     |chunk| {
         let mut hash_map: HashMap<Pubkey, u32> = HashMap::<Pubkey, u32>::new();
         chunk.iter().for_each(|ecb| {
             let txs = decode_txs_map(&ecb.transactions);
             for tx in txs {
                 for acct in &tx.message.account_keys {
-                    match hash_map.get_mut(acct) {
-                        Some(tx_count) => *tx_count = *tx_count + 1,
-                        None => { hash_map.insert(*acct, 1); },
-                    };
+                    add_or_increment(acct, &mut hash_map);
                 }
             };
         });
         hash_map
-    }, |sub_sets| {
+    }, // aggregate all occurence counts (single thread)
+    |sub_sets| {
         let mut outer_set = HashMap::<Pubkey, u32>::new();
 
         sub_sets.iter().for_each(|m| {
             println!("chunk hashmap: {} entries", m.len());
             m.iter().for_each(|entry| {
-                match outer_set.get_mut(entry.0) {
-                    Some(tx_count) => *tx_count = *tx_count + 1,
-                    None => { outer_set.insert(*entry.0, 1); },
-                };
+                add_or_increment(entry.0, &mut outer_set);
             })
         });
 
