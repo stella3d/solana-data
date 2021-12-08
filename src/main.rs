@@ -127,8 +127,5 @@ fn main() {
 
     test_block_loads();
 
-    //scrape_loop(Duration::from_secs(60 * 60 * 4));
-
-    //thread::sleep(Duration::from_secs(600));
-    //scrape_loop(Duration::from_millis(10));
+    //scrape_loop(Duration::from_secs(60 * 60 * 8));
 }

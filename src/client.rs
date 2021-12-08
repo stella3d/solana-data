@@ -103,7 +103,7 @@ impl ClientWrapper {
     pub fn get_block_details(&mut self, slots: &Vec<Slot>, callback: fn(&(Slot, Option<&EncodedConfirmedBlock>))) -> Slot {
         let len = (*slots).len();
         if len > 256 || len < 1 {
-            println!("only ranges 1-100 in length supported right now, input length:  {}", len);
+            println!("only ranges 1-256 in length supported right now, input length:  {}", len);
             return 0;
         }
 
@@ -111,9 +111,6 @@ impl ClientWrapper {
             println!("requesting slot {}", s);
             let r = self.rpc.get_block_with_encoding(*s, UiTransactionEncoding::Base64);
             
-            // should be removed when not dealing with rate limiting
-            //thread::sleep(Self::get_request_delay(len));
-
             match r {
                 Ok(ecb) => {
                     let opt = Some(&ecb);
