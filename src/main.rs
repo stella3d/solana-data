@@ -1,6 +1,7 @@
 use std::{time::{Duration, Instant}, thread::{Thread, self}, fs, cmp::max};
 
 use client::{get_client, ClientWrapper};
+use rayon::ThreadPoolBuilder;
 use serde::{Deserialize, Serialize};
 use solana_program::clock::Slot;
 use solana_sdk::account::Account;
@@ -9,8 +10,9 @@ use solana_transaction_status::{UiTransactionEncoding, EncodedConfirmedBlock};
 use crate::{files::test_block_loads, util::timer};
 
 pub mod client;
-pub mod files;
 pub mod util;
+pub mod analyze;
+pub mod files;
 
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
@@ -122,13 +124,11 @@ static SPECIAL_OWNERS: [&str; 3] =
 
 fn main() {
     println!("\nStarting Solana RPC client test\n");
-    /* 
-    let loop_duration = Duration::from_secs(60 * 60 * 4);
-    scrape_loop(loop_duration);
-    */
 
     test_block_loads();
 
-    thread::sleep(Duration::from_secs(600));
-    scrape_loop(Duration::from_millis(10));
+    //scrape_loop(Duration::from_secs(60 * 60 * 4));
+
+    //thread::sleep(Duration::from_secs(600));
+    //scrape_loop(Duration::from_millis(10));
 }

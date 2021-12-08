@@ -1,6 +1,7 @@
 use core::time;
 use std::{collections::HashSet, sync::Arc, time::Duration, thread, ops::Range};
 
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use solana_client::{self, rpc_client::RpcClient, client_error::{ClientError}};
 use solana_program::{pubkey::Pubkey, clock::Slot};
 use solana_sdk::{transaction::Transaction, account::Account};
@@ -106,7 +107,6 @@ impl ClientWrapper {
             return 0;
         }
 
-        let mut last_slot:u64 = 0;
         for s in slots {
             println!("requesting slot {}", s);
             let r = self.rpc.get_block_with_encoding(*s, UiTransactionEncoding::Base64);
@@ -123,24 +123,11 @@ impl ClientWrapper {
                     eprintln!("{}", e);
                 },
             }
-            last_slot = *s;
         }
 
-        last_slot
-    }
-
-    fn get_request_delay(count: usize) -> Duration {
-        match count {
-            c if c >= 25 => TIME_150_MS,
-            _ => TIME_100_MS
-        }
+        *slots.last().unwrap()
     }
 }
-//const TIME_50_MS: Duration = time::Duration::from_millis(100);
-const TIME_100_MS: Duration = time::Duration::from_millis(100);
-const TIME_150_MS: Duration = time::Duration::from_millis(150);
-const TIME_160_MS: Duration = time::Duration::from_millis(160);
-//const TIME_500_MS: Duration = time::Duration::from_millis(500);
 
 pub fn get_client (rpc_url: &str) -> ClientWrapper {
     let mut rpc = rpc_url;
