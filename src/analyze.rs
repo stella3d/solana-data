@@ -1,4 +1,4 @@
-use std::{thread, time::Duration, collections::HashMap, ops::Deref, path::{Path, PathBuf}, cmp::min};
+use std::{thread, time::{Duration, Instant}, collections::HashMap, ops::Deref, path::{Path, PathBuf}, cmp::min};
 
 use rayon::iter::{ParallelIterator, IntoParallelRefIterator, IntoParallelIterator};
 use solana_program::pubkey::Pubkey;
@@ -15,13 +15,12 @@ pub fn process_block_stream(block_files: &[PathBuf]) {
 
     println!("done processing, converting to vec & sorting...");
 
-
     let mut accts_vec:Vec<(Pubkey, u32)> = acct_set.iter().map(|e| (*e.0, *e.1)).collect();
     accts_vec.sort_by(|e, other| e.1.cmp(&other.1));
 
     accts_vec.iter().for_each(|t| {
         if t.1 > 1 {
-            println!("public key: {} , entries: {}", t.0, t.1);
+            println!("public key: {} - entries: {}", t.0, t.1);
         }
     });
 
@@ -100,7 +99,7 @@ pub fn process_reduce_files<T, C: Send>(paths: &[PathBuf],
 
     let intermediates: Vec<C> = path_chunks.par_iter()
     .map(|&chunk| {
-        println!("start chunk");
+        println!("start chunk @ {:?}", Instant::now());
         let typed: Vec<T> = chunk.iter().map(load_file).collect();
         each_chunk(typed.as_slice())
     }).collect();
