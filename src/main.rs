@@ -125,7 +125,7 @@ static SPECIAL_OWNERS: [&str; 3] =
 fn main() {
     println!("\nStarting Solana RPC client test\n");
 
-    test_block_loads();
+    //test_block_loads();
 
-    //scrape_loop(Duration::from_secs(60 * 60 * 8));
+    scrape_loop(Duration::from_secs(60 * 60 * 8));
 }

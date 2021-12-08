@@ -1,9 +1,10 @@
+use core::fmt;
 use std::{fs::{self, ReadDir}, path::{Path, PathBuf}, string::String};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use solana_transaction_status::EncodedConfirmedBlock;
 use serde_json;
 
-use crate::{util::{log_err_none}, analyze::process_block_stream};
+use crate::{util::{log_err_none, log_err}, analyze::{process_block_stream, PubkeyTxCountMap, CountedTxs}};
 
 
 
@@ -95,6 +96,18 @@ pub(crate) fn slot_file_name(dir: &str, slot: u64, extension: &str) -> String {
     format!("./{}/{}{}{}", dir, SLOT_PREFIX, slot, extension)
 }
 
-pub(crate) fn write_pubkey_counts() {
-    
+const TX_COUNT_PRE: &str = "key_tx_count_";
+// TODO - should i write a trait for "save to file" ?
+pub(crate) fn write_pubkey_counts(dir: String, counts: &CountedTxs) {
+    let map = counts.data;
+    let path = format!("{}{}{}{}", dir, TX_COUNT_PRE, counts.total, JSON_EXT);
+    match serde_json::to_string(&map) {
+        Ok(json) => {
+            match fs::write(&path, json) {
+                Ok(_) => println!("{} written", path),
+                Err(e) => log_err(e),
+            }
+        }
+        Err(e) => { log_err(e)}
+    };
 }
