@@ -1,13 +1,10 @@
-use std::{time::{Duration, Instant}, thread::{Thread, self}, fs, cmp::max};
+use std::{time::{Duration, Instant}, thread::{self}, fs, cmp::max};
 
-use client::{get_client, ClientWrapper};
-use rayon::ThreadPoolBuilder;
+use client::{get_client};
 use serde::{Deserialize, Serialize};
 use solana_program::clock::Slot;
-use solana_sdk::account::Account;
-use solana_transaction_status::{UiTransactionEncoding, EncodedConfirmedBlock};
 
-use crate::{files::{test_block_loads, test_size_average}, util::timer};
+use crate::{files::{test_block_loads, test_size_average}};
 
 pub mod client;
 pub mod util;
@@ -18,6 +15,12 @@ pub mod files;
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 struct ScrapeState {
     pub last_slot: Slot,
+}
+
+impl Default for ScrapeState {
+    fn default() -> Self {
+        Self { last_slot: Default::default() }
+    }
 }
 
 fn scrape_loop(loop_duration: Duration) {
@@ -43,15 +46,14 @@ fn do_scrape() {
     println!("\nDO LOOP");
     println!("\nloaded previous run's state from file:\n{:?}", state);
 
-    let mut state_raw = ScrapeState { last_slot: 0 };
     match state {
         Ok(s) => {
-            state_raw = s;
-            match scrape_blocks(state_raw) {
-                Some(s) => state_raw = s,
+            let mut state = s;
+            match scrape_blocks(state) {
+                Some(s) => state = s,
                 None => {},
             };
-            save_state(state_raw);
+            save_state(state);
         },
         Err(e) => eprintln!("{}", e)
     }
@@ -123,11 +125,15 @@ static SPECIAL_OWNERS: [&str; 3] =
 */
 
 fn main() {
-    println!("\nStarting Solana RPC client test\n");
+    println!("\nStarting Solana data test\n");
 
-    //test_block_loads();
+    test_block_loads();
+
+    thread::sleep(Duration::from_secs(60));
 
     test_size_average();
+
+    thread::sleep(Duration::from_secs(20));
 
     scrape_loop(Duration::from_secs(60 * 60 * 8));
 }

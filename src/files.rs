@@ -1,11 +1,9 @@
-use core::fmt;
-use std::{fs::{self, ReadDir}, path::{Path, PathBuf}, string::String, fmt::Display};
+use std::{fs::{self, ReadDir}, path::{Path, PathBuf}, string::String};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use solana_transaction_status::EncodedConfirmedBlock;
 use serde_json;
 
-use crate::{util::{log_err_none, log_err}, analyze::{process_block_stream, PubkeyTxCountMap, CountedTxs}};
-
+use crate::{util::{log_err_none, log_err}, analyze::{process_block_stream, CountedTxs}};
 
 
 pub fn test_block_loads() {
