@@ -1,5 +1,5 @@
-use core::fmt;
-use std::{fs::{self, ReadDir}, path::{Path, PathBuf}, string::String, fmt::Display};
+use core::{fmt, num};
+use std::{fs::{self, ReadDir}, path::{Path, PathBuf}, string::String, fmt::Display, str::FromStr};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use solana_transaction_status::EncodedConfirmedBlock;
 use serde_json;
@@ -9,8 +9,8 @@ use crate::{util::{log_err_none, log_err}, analyze::{process_block_stream, Pubke
 
 
 pub fn test_block_loads() {
-    println!("\ntesting typed load of .json files...");
-    let paths = dir_file_paths(fs::read_dir(BLOCKS_DIR).unwrap());
+    println!("\ntesting CHUNKED typed load of .json files...");
+    let paths = dir_file_paths(fs::read_dir(CHUNKED_BLOCKS_DIR).unwrap());
     process_block_stream(paths.as_slice());
 }
 
@@ -24,6 +24,21 @@ pub fn dir_file_paths(rd: ReadDir) -> Vec<PathBuf> {
         }
     })
     .filter_map(|o| o)
+    .collect()
+}
+
+fn dir_file_names(rd: ReadDir) -> Vec<PathBuf> {
+    rd.map(|entry_res| {
+        match entry_res {
+            Ok(entry) => {
+                Some(entry.file_name())
+            },
+            Err(e) => log_err_none(e) 
+        }
+    })
+    .map(|o| {
+        PathBuf::from(o.unwrap())
+    })
     .collect()
 }
 
@@ -85,6 +100,18 @@ pub fn load_block_json<P: AsRef<Path>>(path: P) -> Option<EncodedConfirmedBlock>
     }
 }
 
+pub fn load_blocks_chunk_json<P: AsRef<Path>>(path: P) -> Option<Vec<SlotData>> {
+    match fs::read(path) {
+        Ok(data) => {
+            match serde_json::from_slice::<Vec<SlotData>>(&data) {
+                Ok(slots) => Some(slots),
+                Err(e) => log_err_none(e)
+            }
+        },
+        Err(e) => log_err_none(e)
+    }
+}
+
 pub fn load_block_json_unwrap<P: AsRef<Path>>(path: P) -> EncodedConfirmedBlock {
     load_block_json(path).unwrap()
 }
@@ -115,6 +142,83 @@ pub(crate) fn write_pubkey_counts(dir: String, counts: &CountedTxs) {
         Err(e) => { log_err(e) }
     };
 }
+
+pub(crate) type SlotData = (u64, EncodedConfirmedBlock);
+
+pub(crate) fn write_blocks_json_chunk(chunk: &Vec<SlotData>) {
+    let f = chunk.first();
+    let first = f.unwrap().0;
+
+    let l = chunk.last();
+    let last = l.unwrap().0;
+    let file_name =  format!("slots_{}-{}.json", first, last);
+
+    let json_r = serde_json::to_string(chunk);
+
+    match json_r {
+        Ok(data) => {
+            let p = Path::new(&file_name);
+            if Path::exists(p) {
+                println!("file {} already present, not overriding", &file_name);
+            } else {
+                print!("writing block chunk file:  {}\n", &file_name);
+                let _ = fs::write(p, data);
+            }
+        },
+        Err(e) => log_err(e),
+    }
+}
+
+fn parse_slot_num(slot_file_name: &str) -> Option<u64> {
+
+    let underscore_split = slot_file_name.split("_");
+    let num_with_extension = underscore_split.last()?;
+
+    let mut dot_split = num_with_extension.split(".");
+    let num_str: &str = dot_split.next()?;
+
+    println!("parsing file: {},  number:  {}", slot_file_name, num_str);
+
+    match num_str.parse::<u64>() {
+        Ok(n) => Some(n),
+        Err(e) => { log_err(e); None }
+    }
+}
+
+const CHUNKED_BLOCKS_DIR: &str = "blocks/json_chunked";
+
+pub(crate) fn chunk_existing_blocks() {
+    let chunk_len: usize = 100;
+    println!("\ncopy existing single block files to {} block chunks...\n", chunk_len);
+
+    let src_names = dir_file_names(fs::read_dir(BLOCKS_DIR).unwrap());
+    let chunks: Vec<&[PathBuf]> = src_names.chunks(chunk_len).collect();
+
+    chunks.par_iter().for_each(|&chunk| {
+        println!("start chunk");
+
+        let dir_path = Path::new(BLOCKS_DIR);
+
+        let slot_data: Vec<SlotData> = chunk.into_iter()
+            .filter_map(|name| {
+                let full_path = dir_path.join(name);
+                match load_block_json(full_path) {
+                    Some(ecb) => {
+                        let as_str = name.as_os_str().to_str()?;
+                        match parse_slot_num(as_str) {
+                            Some(num) => Some((num, ecb)),
+                            None => None,
+                        }
+                    },
+                    None => None,
+                }
+            })
+            .collect(); 
+
+        write_blocks_json_chunk(&slot_data);
+    });
+}
+
 
 #[derive(Debug)]
 pub(crate) struct FileSizeStats {

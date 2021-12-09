@@ -5,7 +5,7 @@ use solana_program::pubkey::Pubkey;
 use solana_sdk::transaction::Transaction;
 use solana_transaction_status::{EncodedConfirmedBlock, EncodedTransactionWithStatusMeta};
 
-use crate::files::{load_block_json, load_block_json_unwrap, write_pubkey_counts};
+use crate::files::{load_block_json, load_block_json_unwrap, write_pubkey_counts, load_blocks_chunk_json};
 
 
 pub(crate) type PubkeyTxCount = (Pubkey, u32); 
@@ -137,6 +137,40 @@ pub fn process_reduce_files<T, C: Send>(paths: &[PathBuf],
     res
 }
 
+pub fn process_reduce_files_chunked<T, C: Send>(paths: &[PathBuf], 
+    load_chunk_file: fn(&PathBuf) -> Vec<(u64, T)>, 
+    each_chunk: fn(&[(u64, T)]) -> C, 
+    reduce: fn(Vec<C>) -> C) 
+    -> C
+{
+    let chunk_size = min(32, paths.len() / 32);
+    let path_chunks: Vec<&[PathBuf]> = paths.chunks(chunk_size).collect();
+    println!("{} chunks of length {}", path_chunks.len(), chunk_size);
+
+    let par_map_start = Instant::now();
+
+    let intermediates: Vec<C> = path_chunks.par_iter()
+    .map(|&chunk| {
+        //let first = chunk.first().unwrap().to_str().unwrap();
+        //let last = chunk.last().unwrap().to_str().unwrap();
+        //println!("start chunk: {}  -  {}  @ {:?},", first, last, Instant::now());
+        let typed: Vec<(u64, T)> = chunk.iter().flat_map(load_chunk_file).collect();
+        each_chunk(typed.as_slice())
+    }).collect();
+
+    let reduce_start = Instant::now();
+    println!("finished parallel chunked count: {:2} seconds", (reduce_start - par_map_start).as_secs_f32());
+
+    println!("starting single-threaded reduce(), @ {:?}", reduce_start);
+    
+    let res = reduce(intermediates);
+    
+    let reduce_end = Instant::now();
+    println!("finished reduce(), @ {:?}", reduce_end);
+    println!("reduce() for {} elements took {}ms\n", paths.len(), (reduce_end - reduce_start).as_millis());
+    res
+}
+
 fn add_or_increment<T: Copy + Eq + std::hash::Hash>(key: T, hm: &mut HashMap<T, u32>) {
     match hm.entry(key) {
         std::collections::hash_map::Entry::Occupied(mut tx_count) => {
@@ -149,12 +183,12 @@ fn add_or_increment<T: Copy + Eq + std::hash::Hash>(key: T, hm: &mut HashMap<T, 
 const SPECIAL_ADDR_STR: &str = "11111111111111111111111111111111";
 
 pub fn find_account_set_stream(block_files: &[PathBuf]) -> PubkeyTxCountMap {
-    process_reduce_files::<EncodedConfirmedBlock, PubkeyTxCountMap>(block_files, 
+    process_reduce_files_chunked::<EncodedConfirmedBlock, PubkeyTxCountMap>(block_files, 
     |p| { 
-        load_block_json_unwrap(p) 
+        load_blocks_chunk_json(p).unwrap()
     },
     // for each chunk, count occurences (parallel)
-find_account_set, 
+    find_account_set_tuple, 
     // aggregate all occurence counts (single thread, but fast)
     |sub_sets| {
         let mut outer_set = PubkeyTxCountMap::new();
@@ -181,6 +215,22 @@ pub fn find_account_set(blocks: &[EncodedConfirmedBlock]) -> PubkeyTxCountMap {
     let mut hash_map = PubkeyTxCountMap::new();
 
     blocks.iter().for_each(|ecb| {
+        let txs = decode_txs_map(&ecb.transactions);
+        for tx in txs {
+            for acct in &tx.message.account_keys {
+                add_or_increment(*acct, &mut hash_map);
+            }
+        };
+    });
+
+    hash_map
+}
+
+pub fn find_account_set_tuple(blocks: &[(u64, EncodedConfirmedBlock)]) -> PubkeyTxCountMap {
+    let mut hash_map = PubkeyTxCountMap::new();
+
+    blocks.iter().for_each(|data| {
+        let ecb = &(data.1);
         let txs = decode_txs_map(&ecb.transactions);
         for tx in txs {
             for acct in &tx.message.account_keys {
