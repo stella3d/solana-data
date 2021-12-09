@@ -138,29 +138,24 @@ pub fn process_reduce_files<T, C: Send>(paths: &[PathBuf],
 }
 
 pub fn process_reduce_files_chunked<T, C: Send>(paths: &[PathBuf], 
-    load_chunk_file: fn(&PathBuf) -> Vec<(u64, T)>, 
+    load_chunk_file: fn(&PathBuf) -> Option<Vec<(u64, T)>>, 
     each_chunk: fn(&[(u64, T)]) -> C, 
     reduce: fn(Vec<C>) -> C) 
     -> C
 {
-    let chunk_size = min(32, paths.len() / 32);
-    let path_chunks: Vec<&[PathBuf]> = paths.chunks(chunk_size).collect();
-    println!("{} chunks of length {}", path_chunks.len(), chunk_size);
+    println!("{} chunks of length {}", paths.len(), 100);
 
     let par_map_start = Instant::now();
 
-    let intermediates: Vec<C> = path_chunks.par_iter()
-    .map(|&chunk| {
-        //let first = chunk.first().unwrap().to_str().unwrap();
-        //let last = chunk.last().unwrap().to_str().unwrap();
-        //println!("start chunk: {}  -  {}  @ {:?},", first, last, Instant::now());
-        let typed: Vec<(u64, T)> = chunk.iter().flat_map(load_chunk_file).collect();
+    let intermediates: Vec<C> = paths.par_iter()
+    .map(|chunk_path| {
+        //println!("start chunk: @ {:?},", Instant::now());
+        let typed: Vec<(u64, T)> = load_chunk_file(chunk_path).unwrap();
         each_chunk(typed.as_slice())
     }).collect();
 
     let reduce_start = Instant::now();
     println!("finished parallel chunked count: {:2} seconds", (reduce_start - par_map_start).as_secs_f32());
-
     println!("starting single-threaded reduce(), @ {:?}", reduce_start);
     
     let res = reduce(intermediates);
@@ -183,10 +178,10 @@ fn add_or_increment<T: Copy + Eq + std::hash::Hash>(key: T, hm: &mut HashMap<T, 
 const SPECIAL_ADDR_STR: &str = "11111111111111111111111111111111";
 
 pub fn find_account_set_stream(block_files: &[PathBuf]) -> PubkeyTxCountMap {
-    process_reduce_files_chunked::<EncodedConfirmedBlock, PubkeyTxCountMap>(block_files, 
-    |p| { 
-        load_blocks_chunk_json(p).unwrap()
-    },
+    process_reduce_files_chunked::<EncodedConfirmedBlock, PubkeyTxCountMap>(block_files,
+|p| {
+            load_blocks_chunk_json(p)
+        } ,
     // for each chunk, count occurences (parallel)
     find_account_set_tuple, 
     // aggregate all occurence counts (single thread, but fast)
