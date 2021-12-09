@@ -1,11 +1,11 @@
-use core::time;
-use std::{collections::HashSet, sync::Arc, time::Duration, thread, ops::Range};
+use std::{collections::HashSet, sync::Arc, path::Path};
 
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use solana_client::{self, rpc_client::RpcClient, client_error::{ClientError}};
 use solana_program::{pubkey::Pubkey, clock::Slot};
 use solana_sdk::{transaction::Transaction, account::Account};
 use solana_transaction_status::{EncodedTransactionWithStatusMeta, UiTransactionEncoding, EncodedConfirmedBlock};
+
+use crate::files::{slot_json_path};
 
 
 pub static DEVNET_RPC: &str = "https://api.devnet.solana.com";
@@ -102,15 +102,19 @@ impl ClientWrapper {
 
     pub fn get_block_details(&mut self, slots: &Vec<Slot>, callback: fn(&(Slot, Option<&EncodedConfirmedBlock>))) -> Slot {
         let len = (*slots).len();
-        if len > 256 || len < 1 {
-            println!("only ranges 1-256 in length supported right now, input length:  {}", len);
+        if len > 4096 || len < 1 {
+            println!("only ranges 1-4096 in length supported right now, input length:  {}", len);
             return 0;
         }
 
         for s in slots {
-            println!("requesting slot {}", s);
+            if Path::new(&slot_json_path(*s)).exists() { 
+            println!("SKIP: request slot {}, file exists", s);
+                continue; 
+            }
+
+            print!("requesting slot {}...\t", s);
             let r = self.rpc.get_block_with_encoding(*s, UiTransactionEncoding::Base64);
-            
             match r {
                 Ok(ecb) => {
                     let opt = Some(&ecb);

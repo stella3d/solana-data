@@ -109,7 +109,7 @@ pub fn process_reduce_files<T, C: Send>(paths: &[PathBuf],
     reduce: fn(Vec<C>) -> C) 
     -> C
 {
-    let chunk_size = min(128, paths.len() / 32);
+    let chunk_size = min(100, paths.len() / 32);
     let path_chunks: Vec<&[PathBuf]> = paths.chunks(chunk_size).collect();
     println!("{} chunks of length {}", path_chunks.len(), chunk_size);
 
@@ -117,8 +117,8 @@ pub fn process_reduce_files<T, C: Send>(paths: &[PathBuf],
 
     let intermediates: Vec<C> = path_chunks.par_iter()
     .map(|&chunk| {
-        let first = chunk.first().unwrap().to_str().unwrap();
-        let last = chunk.last().unwrap().to_str().unwrap();
+        //let first = chunk.first().unwrap().to_str().unwrap();
+        //let last = chunk.last().unwrap().to_str().unwrap();
         //println!("start chunk: {}  -  {}  @ {:?},", first, last, Instant::now());
         let typed: Vec<T> = chunk.iter().map(load_file).collect();
         each_chunk(typed.as_slice())

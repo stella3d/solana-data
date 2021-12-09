@@ -7,7 +7,7 @@ use solana_program::clock::Slot;
 use solana_sdk::account::Account;
 use solana_transaction_status::{UiTransactionEncoding, EncodedConfirmedBlock};
 
-use crate::{files::test_block_loads, util::timer};
+use crate::{files::{test_block_loads, test_size_average}, util::timer};
 
 pub mod client;
 pub mod util;
@@ -21,7 +21,7 @@ struct ScrapeState {
 }
 
 fn scrape_loop(loop_duration: Duration) {
-    loop_task(loop_duration,do_loop);
+    loop_task(loop_duration,do_scrape);
 }
 
 const STATE_FILE: &str = "scrape_state.json";
@@ -38,7 +38,7 @@ fn load_state() -> Result<ScrapeState, serde_json::Error> {
     }
 }
 
-fn do_loop() {
+fn do_scrape() {
     let state = load_state();
     println!("\nDO LOOP");
     println!("\nloaded previous run's state from file:\n{:?}", state);
@@ -73,8 +73,8 @@ fn scrape_blocks(previous_state: ScrapeState) -> Option<ScrapeState> {
         return None; 
     }
 
-    let slot_count = max(slot - previous_state.last_slot, 128);
-    let slots_r = client.rpc.get_blocks_with_limit(slot_count, 256);
+    let slot_count = max(slot - previous_state.last_slot, 1024);
+    let slots_r = client.rpc.get_blocks_with_limit(slot_count, 1024);
     let slots = match slots_r {
         Ok(s) => s,
         Err(_) => vec![],
@@ -126,6 +126,8 @@ fn main() {
     println!("\nStarting Solana RPC client test\n");
 
     //test_block_loads();
+
+    test_size_average();
 
     scrape_loop(Duration::from_secs(60 * 60 * 8));
 }

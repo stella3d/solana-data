@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{fs::{self, ReadDir}, path::{Path, PathBuf}, string::String};
+use std::{fs::{self, ReadDir}, path::{Path, PathBuf}, string::String, fmt::Display};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use solana_transaction_status::EncodedConfirmedBlock;
 use serde_json;
@@ -55,7 +55,7 @@ pub fn load_blocks_json(dir: ReadDir) -> Vec<EncodedConfirmedBlock> {
     blocks
 }
 
-const BLOCKS_DIR: &str = "blocks/json";
+pub(crate) const BLOCKS_DIR: &str = "blocks/json";
 pub fn write_json_encoded_block(slot: u64, block: &EncodedConfirmedBlock) {
     let json_r = serde_json::to_string(&block);
     match json_r {
@@ -65,7 +65,7 @@ pub fn write_json_encoded_block(slot: u64, block: &EncodedConfirmedBlock) {
             if Path::exists(Path::new(&name)) {
                 println!("FILE {} ALREADY PRESENT, not overriding", name);
             } else {
-                println!("writing to file:  {}", name);
+                print!("writing file:  {}\n", name);
                 let _ = fs::write(name, data);
             }
         },
@@ -92,8 +92,12 @@ pub fn load_block_json_unwrap<P: AsRef<Path>>(path: P) -> EncodedConfirmedBlock 
 const JSON_EXT: &str = ".json";
 const SLOT_PREFIX: &str = "slot_";
 
+pub(crate) fn slot_json_path(slot: u64) -> String {
+    format!("./{}/{}{}{}", BLOCKS_DIR, SLOT_PREFIX, slot, JSON_EXT)
+}
+
 pub(crate) fn slot_file_name(dir: &str, slot: u64, extension: &str) -> String {
-    format!("./{}/{}{}{}", dir, SLOT_PREFIX, slot, extension)
+    format!("{}/{}{}{}", dir, SLOT_PREFIX, slot, extension)
 }
 
 const TX_COUNT_PRE: &str = "key_tx_count_";
@@ -108,6 +112,42 @@ pub(crate) fn write_pubkey_counts(dir: String, counts: &CountedTxs) {
                 Err(e) => log_err(e),
             }
         }
-        Err(e) => { log_err(e)}
+        Err(e) => { log_err(e) }
     };
+}
+
+#[derive(Debug)]
+pub(crate) struct FileSizeStats {
+    pub min: u64,
+    pub max: u64,
+    pub avg: u64,
+    pub count: u64
+}
+
+pub fn test_size_average() {
+    let stats = dir_size_stats(BLOCKS_DIR).unwrap();
+
+    println!("files:\n\tcount:{}\taverage: {} bytes\n", stats.count, stats.avg)
+
+}
+
+pub(crate) fn dir_size_stats<P: AsRef<Path>>(path: P) -> Result<FileSizeStats, std::io::Error> {
+
+    let rd = fs::read_dir(path).unwrap();
+    let file_paths = dir_file_paths(rd);
+    let count = file_paths.len() as u64;
+
+    let size_sum: u64 = file_paths.par_iter()
+        .map(get_file_size).sum();
+
+    let average: u64 = size_sum / count as u64;
+
+    Ok(FileSizeStats { min: 0, max: 0, avg: average, count: count })
+}
+
+pub(crate) fn get_file_size<P: AsRef<Path>>(path: P) -> u64 {
+    match fs::metadata(path) {
+        Ok(meta) => { meta.len() },
+        Err(e) => { log_err(e); 0 },
+    }
 }
