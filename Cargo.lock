@@ -344,6 +344,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bzip2"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6afcd980b5f3a45017c57e57a2fcccbb351cc43a356ce117ef760ef8052b89b0"
+dependencies = [
+ "bzip2-sys",
+ "libc",
+]
+
+[[package]]
 name = "bzip2-sys"
 version = "0.1.11+1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2493,6 +2503,7 @@ dependencies = [
  "solana-program",
  "solana-sdk",
  "solana-transaction-status",
+ "zip",
 ]
 
 [[package]]
@@ -2858,7 +2869,7 @@ dependencies = [
  "blake3",
  "bv",
  "byteorder",
- "bzip2",
+ "bzip2 0.3.3",
  "crossbeam-channel 0.4.4",
  "dashmap",
  "dir-diff",
@@ -3713,6 +3724,20 @@ dependencies = [
  "quote 1.0.10",
  "syn 1.0.82",
  "synstructure",
+]
+
+[[package]]
+name = "zip"
+version = "0.5.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93ab48844d61251bb3835145c521d88aa4031d7139e8485990f60ca911fa0815"
+dependencies = [
+ "byteorder",
+ "bzip2 0.4.3",
+ "crc32fast",
+ "flate2",
+ "thiserror",
+ "time",
 ]
 
 [[package]]
