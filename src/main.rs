@@ -4,12 +4,13 @@ use client::{get_client};
 use serde::{Deserialize, Serialize};
 use solana_program::clock::Slot;
 
-use crate::{files::{test_block_loads, test_size_average}};
+use crate::{files::{test_block_loads, test_size_average}, zip_util::test_extract_blocks_zip};
 
 pub mod client;
 pub mod util;
 pub mod analyze;
 pub mod files;
+pub mod zip_util;
 
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
@@ -127,9 +128,13 @@ static SPECIAL_OWNERS: [&str; 3] =
 fn main() {
     println!("\nStarting Solana data test\n");
 
-    test_block_loads();
+    test_extract_blocks_zip();
 
     thread::sleep(Duration::from_secs(60));
+
+    test_block_loads();
+
+    thread::sleep(Duration::from_secs(180));
 
     test_size_average();
 

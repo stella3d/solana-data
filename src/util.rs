@@ -13,6 +13,12 @@ pub fn timer<T: FnOnce() -> ()>(func: T) -> Duration {
     return start.elapsed();
 }
 
+pub fn timer_log_ms<T: FnOnce() -> ()>(prefix: &str, func: T) -> Duration {
+    let elapsed = timer(func);
+    println!("{}  -  {}ms", prefix, elapsed.as_millis());
+    elapsed
+}
+
 pub fn time_run<T: FnOnce() -> R, R>(func: T) -> TimedData<R> {
     let start = Instant::now();
     let returned = func();
