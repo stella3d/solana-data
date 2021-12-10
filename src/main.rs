@@ -110,15 +110,14 @@ fn loop_task(total_time: Duration, loop_fn: fn()) {
 
 fn main() {
     println!("\nStarting Solana RPC client test\n");
-/* 
-    chunk_existing_blocks(100);
-    thread::sleep(Duration::from_secs(120));
+    //chunk_existing_blocks(100);
+    //thread::sleep(Duration::from_secs(120)); 
      
     test_block_loads();
     thread::sleep(Duration::from_secs(60));
 
     test_size_average(CHUNKED_BLOCKS_DIR);
     thread::sleep(Duration::from_secs(60));
-*/
+
     scrape_loop(duration_from_hours(12));
 }

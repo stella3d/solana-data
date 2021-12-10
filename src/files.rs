@@ -1,4 +1,4 @@
-use std::{fs::{self, ReadDir, File}, path::{Path, PathBuf}, string::String, borrow::Borrow};
+use std::{fs::{self, ReadDir, File}, path::{Path, PathBuf}, string::String, borrow::Borrow, time::{Duration, Instant}};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{de, Deserialize};
 use solana_transaction_status::EncodedConfirmedBlock;
@@ -88,6 +88,7 @@ pub fn write_json_encoded_block(slot: u64, block: &EncodedConfirmedBlock) {
     }
 }
 
+/*
 pub fn load_blocks_generic<'a, P: AsRef<Path>, T: Deserialize<'a>>(path: P) -> Option<T> {
     let data = fs::read(path).unwrap_or(vec![]);
     let res: Option<T> = parse_blocks_gen(&data);
@@ -101,7 +102,7 @@ pub fn parse_blocks_gen<'a, T: Deserialize<'a>>(buffer: &'a Vec<u8>) -> Option<T
         Err(e) => log_err_none(e)
     }
 }
-
+*/
 
 pub fn load_block_json<P: AsRef<Path>>(path: P) -> Option<EncodedConfirmedBlock> {
     match fs::read(path) {
@@ -227,6 +228,7 @@ pub(crate) const CHUNKED_BLOCKS_DIR: &str = "blocks/json_chunked";
 pub(crate) fn chunk_existing_blocks(chunk_len: usize) {
     println!("\ncopy existing single block files to {} block chunks...\n", chunk_len);
 
+    let start_time = Instant::now();
     let src_names = dir_file_names(fs::read_dir(BLOCKS_DIR).unwrap());
     let chunks: Vec<&[PathBuf]> = src_names.chunks(chunk_len).collect();
 
@@ -261,7 +263,9 @@ pub(crate) fn chunk_existing_blocks(chunk_len: usize) {
         write_blocks_json_chunk(&slot_data);
     });
 
-    println!("\nfinished writing chunks of blocks\n");
+    let end_time = Instant::now();
+    let elapsed: Duration = end_time - start_time;
+    println!("\nfinished writing {} chunks of blocks, time:  {}ms\n", chunks.len(), elapsed.as_millis());
 }
 
 
