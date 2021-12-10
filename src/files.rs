@@ -231,13 +231,10 @@ pub(crate) struct FileSizeStats {
 
 pub fn test_size_average(dir: &str) {
     let stats = dir_size_stats(dir).unwrap();
-
-    println!("files:\n\tcount:{}\taverage: {} bytes\n", stats.count, stats.avg)
-
+    println!("files:\n\tcount:{}\taverage: {} kb\n", stats.count, stats.avg / 1024)
 }
 
 pub(crate) fn dir_size_stats<P: AsRef<Path>>(path: P) -> Result<FileSizeStats, std::io::Error> {
-
     let rd = fs::read_dir(path).unwrap();
     let file_paths = dir_file_paths(rd);
     let count = file_paths.len() as u64;
