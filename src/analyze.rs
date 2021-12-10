@@ -1,4 +1,4 @@
-use std::{thread, time::{Duration, Instant}, collections::HashMap, path::{PathBuf}, cmp::min, str::FromStr};
+use std::{thread, time::{Duration, Instant}, collections::HashMap, path::{PathBuf, Path}, cmp::min, str::FromStr};
 
 use rayon::iter::{ParallelIterator, IntoParallelRefIterator};
 use solana_program::pubkey::Pubkey;
@@ -19,6 +19,8 @@ pub(crate) struct CountedTxs<'a> {
 pub fn process_block_stream(block_files: &[PathBuf]) {
     println!("testing chunked stream processing...");
 
+    let first_chunk = &block_files[0];
+
     let acct_set = find_account_set_stream(block_files);
 
     println!("done processing, converting to vec & sorting...");
@@ -31,15 +33,13 @@ pub fn process_block_stream(block_files: &[PathBuf]) {
             total: accts_vec.len() as u32, data: &accts_vec 
         });
 
-    thread::sleep(Duration::from_millis(10000));
-
     accts_vec[(accts_vec.len() - 25)..].iter().for_each(|t| {
         if t.1 > 2  {
-            println!("public key: {} - entries: {}", t.0, t.1);
+            println!("public key: {} - entries:  {}", t.0, t.1);
         }
     });
 
-    println!("\npublic key entries: {}", acct_set.len());
+    println!("\nunique public keys counted: {}\n", acct_set.len());
 }
 
 
@@ -135,15 +135,23 @@ pub fn process_reduce_files<T, C: Send>(paths: &[PathBuf],
     res
 }
 
+type LoadChunkFileFn<P: AsRef<Path>> = fn(&P) -> Option<Vec<(u64, EncodedConfirmedBlock)>>;
+
+fn blocks_json_file_len(path: &PathBuf, load_file: LoadChunkFileFn<PathBuf>) -> Option<usize> {
+    if let Some(data) = load_file(&path) {
+        Some(data.len()) 
+    } 
+    else { None }
+}
+
 pub fn process_reduce_files_chunked<T, C: Send>(paths: &[PathBuf], 
     load_chunk_file: fn(&PathBuf) -> Option<Vec<(u64, T)>>, 
     each_chunk: fn(&[(u64, T)]) -> C, 
     reduce: fn(Vec<C>) -> C) 
     -> C
 {
-    println!("{} chunks of length {}", paths.len(), 100);
-
     let par_map_start = Instant::now();
+    //let first_path = paths.first()?;
 
     let intermediates: Vec<C> = paths.par_iter()
     .map(|chunk_path| {
@@ -153,8 +161,8 @@ pub fn process_reduce_files_chunked<T, C: Send>(paths: &[PathBuf],
     }).collect();
 
     let reduce_start = Instant::now();
-    println!("finished parallel chunked count: {:2} seconds", (reduce_start - par_map_start).as_secs_f32());
-    println!("starting single-threaded reduce(), @ {:?}", reduce_start);
+    println!("finished parallel occurence count: {:2} seconds", (reduce_start - par_map_start).as_secs_f32());
+    println!("starting reduce(), @ {:?}", reduce_start);
     
     let res = reduce(intermediates);
     

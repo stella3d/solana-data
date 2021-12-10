@@ -1,10 +1,13 @@
 use std::{time::{Duration, Instant}, thread, fs, cmp::max};
 
-use client::{get_client};
+use client::{get_client, MAINNET_RPC, DEVNET_RPC, TESTNET_RPC};
 use serde::{Deserialize, Serialize};
 use solana_program::clock::Slot;
 
-use crate::{files::{test_block_loads, test_size_average, chunk_existing_blocks, CHUNKED_BLOCKS_DIR, copy_sample, BLOCK_SAMPLE_DIR, BLOCKS_DIR}, util::{duration_from_hours, log_err}};
+use crate::{
+    files::{test_block_loads, test_size_average, chunk_existing_blocks, CHUNKED_BLOCKS_DIR, copy_sample, BLOCK_SAMPLE_DIR, BLOCKS_DIR}, 
+    util::{duration_from_hours, log_err}
+};
 
 pub mod client;
 pub mod util;
@@ -23,8 +26,10 @@ impl Default for ScrapeState {
     }
 }
 
-fn scrape_loop(loop_duration: Duration) {
-    loop_task(loop_duration,do_scrape);
+fn scrape_loop(duration: Duration, rpc_url: &str) {
+    let r = rpc_url.clone();
+    let task = || { do_scrape(rpc_url) };
+    loop_task(duration, task);
 }
 
 const STATE_FILE: &str = "scrape_state.json";
@@ -41,14 +46,14 @@ fn load_state() -> Result<ScrapeState, serde_json::Error> {
     }
 }
 
-fn do_scrape() {
+fn do_scrape(rpc_url: &str) {
     let prev_state = load_state();
     println!("\nDO LOOP");
     println!("\nloaded previous run's state from file:\n{:?}", prev_state);
 
     match prev_state {
         Ok(s) => {
-            if let Some(new_state) = scrape_blocks(s) {
+            if let Some(new_state) = scrape_blocks(s, rpc_url) {
                 save_state(new_state); 
             };
         },
@@ -57,8 +62,9 @@ fn do_scrape() {
 }
 
 
-fn scrape_blocks(previous_state: ScrapeState) -> Option<ScrapeState> {
-    let mut client = get_client("");
+fn scrape_blocks(previous_state: ScrapeState, rpc_url: &str) -> Option<ScrapeState> {
+    println!("using rpc url:  {}\n", rpc_url);
+    let mut client = get_client(rpc_url);
 
     let slot_res= client.rpc.get_slot();
     let slot = match slot_res {
@@ -97,7 +103,7 @@ fn scrape_blocks(previous_state: ScrapeState) -> Option<ScrapeState> {
     else { Some(ScrapeState { last_slot: last }) }
 }
 
-fn loop_task(total_time: Duration, loop_fn: fn()) {
+fn loop_task<F: Fn() -> ()>(total_time: Duration, loop_fn: F) {
     let start = Instant::now();
     let end = start + total_time;
     while Instant::now() < end {
@@ -107,20 +113,23 @@ fn loop_task(total_time: Duration, loop_fn: fn()) {
 }
 
 
-
 fn main() {
     println!("\nStarting Solana RPC client test\n");
-    //chunk_existing_blocks(100);
-    //thread::sleep(Duration::from_secs(120)); 
+
+    //chunk_existing_blocks(80);
+    //thread::sleep(Duration::from_secs(15)); 
      
     //copy_sample(BLOCKS_DIR, 50);
     //thread::sleep(Duration::from_secs(600));
 
+    /* 
     test_block_loads();
-    thread::sleep(Duration::from_secs(60));
+    thread::sleep(Duration::from_secs(180));
 
     test_size_average(CHUNKED_BLOCKS_DIR);
-    thread::sleep(Duration::from_secs(60));
+    thread::sleep(Duration::from_secs(600));
+    */
 
-    scrape_loop(duration_from_hours(12));
+    let rpc = MAINNET_RPC;
+    scrape_loop(duration_from_hours(4), &rpc);
 }
