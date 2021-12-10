@@ -7,7 +7,7 @@ use solana_program::clock::Slot;
 use solana_sdk::account::Account;
 use solana_transaction_status::{UiTransactionEncoding, EncodedConfirmedBlock};
 
-use crate::{files::{test_block_loads, test_size_average, chunk_existing_blocks, CHUNKED_BLOCKS_DIR}, util::timer};
+use crate::{files::{test_block_loads, test_size_average, chunk_existing_blocks, CHUNKED_BLOCKS_DIR}, util::{timer, duration_from_hours}};
 
 pub mod client;
 pub mod util;
@@ -125,14 +125,13 @@ static SPECIAL_OWNERS: [&str; 3] =
 fn main() {
     println!("\nStarting Solana RPC client test\n");
 
-    
     chunk_existing_blocks(100);
-    thread::sleep(Duration::from_secs(60));
+    thread::sleep(Duration::from_secs(20));
      
-    test_block_loads();
-    thread::sleep(Duration::from_secs(60));
+    //test_block_loads();
+    //thread::sleep(Duration::from_secs(60));
 
-    test_size_average(CHUNKED_BLOCKS_DIR);
+    //test_size_average(CHUNKED_BLOCKS_DIR);
 
-    //scrape_loop(Duration::from_secs(60 * 60 * 8));
+    scrape_loop(duration_from_hours(12));
 }

@@ -1,4 +1,4 @@
-use core::{fmt, num};
+use core::{fmt, num::{self}};
 use std::{fs::{self, ReadDir}, path::{Path, PathBuf}, string::String, fmt::Display, str::FromStr};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use solana_transaction_status::EncodedConfirmedBlock;
@@ -145,17 +145,31 @@ pub(crate) fn write_pubkey_counts(dir: String, counts: &CountedTxs) {
 
 pub(crate) type SlotData = (u64, EncodedConfirmedBlock);
 
+pub(crate) fn chunk_json_name(first: u64, last: u64) -> String {
+    format!("slots_{}-{}.json", first, last)
+}
+
+pub(crate) fn chunk_name(chunk: &Vec<SlotData>) -> String {
+    let first= chunk.first().unwrap().0;
+    let last = chunk.last().unwrap().0;
+    chunk_json_name(first, last)
+}
+
+pub(crate) fn chunk_path_from_inputs(chunk: &[PathBuf]) -> String {
+    let f_path: &PathBuf = chunk.first().unwrap();
+    let first = slot_num_from_path(f_path).unwrap();
+    let l_path: &PathBuf = chunk.last().unwrap();
+    let last = slot_num_from_path(l_path).unwrap();
+
+    let file_name = chunk_json_name(first, last);
+
+    format!("{}/{}",CHUNKED_BLOCKS_DIR, &file_name).to_string()
+}
+
 pub(crate) fn write_blocks_json_chunk(chunk: &Vec<SlotData>) {
-    let f = chunk.first();
-    let first = f.unwrap().0;
+    let file_name = chunk_name(chunk);
 
-    let l = chunk.last();
-    let last = l.unwrap().0;
-    let file_name =  format!("slots_{}-{}.json", first, last);
-
-    let json_r = serde_json::to_string(chunk);
-
-    match json_r {
+    match serde_json::to_string(chunk) {
         Ok(data) => {
             let f_str = &("/".to_string() + &file_name);
             let p_str = format!("{}{}",CHUNKED_BLOCKS_DIR, f_str);
@@ -186,6 +200,13 @@ fn parse_slot_num(slot_file_name: &str) -> Option<u64> {
     }
 }
 
+fn slot_num_from_path(slot_path: &PathBuf) -> Option<u64> {
+    match slot_path.as_os_str().to_str() {
+        Some(p) => parse_slot_num(p),
+        None => None,
+    }
+}
+
 pub(crate) const CHUNKED_BLOCKS_DIR: &str = "blocks/json_chunked";
 
 pub(crate) fn chunk_existing_blocks(chunk_len: usize) {
@@ -199,7 +220,13 @@ pub(crate) fn chunk_existing_blocks(chunk_len: usize) {
     let dir_path = Path::new(BLOCKS_DIR);
 
     chunks.par_iter().for_each(|&chunk| {
-        //println!("start chunk");
+        let c_path_str = &chunk_path_from_inputs(&chunk);
+        let chunk_out_path = Path::new(c_path_str);
+        if Path::exists(chunk_out_path) { 
+            println!("skipping pre-existing chunk:  {}", chunk_out_path.to_string_lossy());
+            return 
+        }
+
         let slot_data: Vec<SlotData> = chunk.into_iter()
             .filter_map(|name| {
                 let full_path = dir_path.join(name);
@@ -223,8 +250,6 @@ pub(crate) fn chunk_existing_blocks(chunk_len: usize) {
 
 #[derive(Debug)]
 pub(crate) struct FileSizeStats {
-    pub min: u64,
-    pub max: u64,
     pub avg: u64,
     pub count: u64
 }
@@ -239,17 +264,15 @@ pub(crate) fn dir_size_stats<P: AsRef<Path>>(path: P) -> Result<FileSizeStats, s
     let file_paths = dir_file_paths(rd);
     let count = file_paths.len() as u64;
 
-    let size_sum: u64 = file_paths.par_iter()
-        .map(get_file_size).sum();
-
+    let size_sum: u64 = file_paths.par_iter().map(get_file_size).sum();
     let average: u64 = size_sum / count as u64;
 
-    Ok(FileSizeStats { min: 0, max: 0, avg: average, count: count })
+    Ok(FileSizeStats { avg: average, count: count })
 }
 
 pub(crate) fn get_file_size<P: AsRef<Path>>(path: P) -> u64 {
     match fs::metadata(path) {
-        Ok(meta) => { meta.len() },
+        Ok(meta) => meta.len(),
         Err(e) => { log_err(e); 0 },
     }
 }

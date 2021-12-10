@@ -19,6 +19,11 @@ pub fn time_run<T: FnOnce() -> R, R>(func: T) -> TimedData<R> {
     return TimedData { time: start.elapsed(), data: returned }
 }
 
+pub(crate) fn duration_from_hours(hours: u64) -> Duration {
+    const secs_per_hour: u64 = 60 * 60;
+    Duration::from_secs(secs_per_hour * hours)
+}
+
 pub fn log_err<E: Debug + Display>(e: E) { eprintln!("{}", e); }
 
 pub fn log_err_none<T, E: Debug + Display>(e: E) -> Option<T> { eprintln!("{}", e); None }
