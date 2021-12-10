@@ -4,7 +4,7 @@ use client::{get_client};
 use serde::{Deserialize, Serialize};
 use solana_program::clock::Slot;
 
-use crate::{files::{test_block_loads, test_size_average, chunk_existing_blocks, CHUNKED_BLOCKS_DIR}, util::{duration_from_hours, log_err}};
+use crate::{files::{test_block_loads, test_size_average, chunk_existing_blocks, CHUNKED_BLOCKS_DIR, copy_sample, BLOCK_SAMPLE_DIR, BLOCKS_DIR}, util::{duration_from_hours, log_err}};
 
 pub mod client;
 pub mod util;
@@ -52,7 +52,7 @@ fn do_scrape() {
                 save_state(new_state); 
             };
         },
-        Err(e) => log_err(e)
+        Err(e) => log_err(&e)
     }
 }
 
@@ -113,6 +113,9 @@ fn main() {
     //chunk_existing_blocks(100);
     //thread::sleep(Duration::from_secs(120)); 
      
+    //copy_sample(BLOCKS_DIR, 50);
+    //thread::sleep(Duration::from_secs(600));
+
     test_block_loads();
     thread::sleep(Duration::from_secs(60));
 

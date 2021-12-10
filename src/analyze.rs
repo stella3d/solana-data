@@ -173,33 +173,51 @@ fn add_or_increment<T: Copy + Eq + std::hash::Hash>(key: T, hm: &mut HashMap<T, 
     };
 }
 
+fn chunks_count<'a, T>(data: &'a Vec<T>, chunk_count: usize) -> Vec<&'a [T]> {
+    let chunk_len = data.len() / chunk_count;
+    let result: Vec<&[T]> = data.chunks(chunk_len).collect();
+    result.to_owned()
+}
+
+fn reduce_count_map(sub_sets: Vec<PubkeyTxCountMap>) -> PubkeyTxCountMap {
+    let ss_chunks: Vec<&[PubkeyTxCountMap]> = chunks_count(&sub_sets, 4);
+    let sub_maps: Vec<PubkeyTxCountMap> = ss_chunks.par_iter()
+    .map(|&chunk| {
+        reduce_count_chunk(chunk)
+    }).collect();
+
+    //let mut outer_set = PubkeyTxCountMap::new();
+    let outer_set = reduce_count_chunk(&sub_maps);
+
+    outer_set
+}
+
+fn reduce_count_chunk(chunk: &[PubkeyTxCountMap]) -> PubkeyTxCountMap {
+    let mut chunk_map = PubkeyTxCountMap::new();
+    chunk.iter().for_each(|sub_map| {
+        sub_map.iter().for_each(|entry|{
+            let pk = *entry.0;
+            let sub_count = *entry.1;
+            match chunk_map.entry(pk) {
+                std::collections::hash_map::Entry::Occupied(mut tx_count) => {
+                    tx_count.insert(tx_count.get() + sub_count);
+                },
+                std::collections::hash_map::Entry::Vacant(_) => { chunk_map.insert(pk, sub_count); },
+            };
+        });
+    });
+    chunk_map
+}
+
 pub fn find_account_set_stream(block_files: &[PathBuf]) -> PubkeyTxCountMap {
     process_reduce_files_chunked::<EncodedConfirmedBlock, PubkeyTxCountMap>(block_files,
 |p| {
             load_blocks_chunk_json(p)
         } ,
     // for each chunk, count occurences (parallel)
-    find_account_set_tuple, 
+find_account_set_tuple,
     // aggregate all occurence counts (single thread, but fast)
-    |sub_sets| {
-        let mut outer_set = PubkeyTxCountMap::new();
-
-        sub_sets.iter().for_each(|m| {
-            //println!("chunk hashmap: {} entries", m.len());
-            m.iter().for_each(|entry| {
-                let pk = *entry.0;
-                let sub_count = *entry.1;
-                match outer_set.entry(pk) {
-                    std::collections::hash_map::Entry::Occupied(mut tx_count) => {
-                        tx_count.insert(tx_count.get() + sub_count);
-                    },
-                    std::collections::hash_map::Entry::Vacant(_) => { outer_set.insert(pk, sub_count); },
-                };
-            })
-        });
-
-        outer_set
-    })
+    reduce_count_map)
 }
 
 pub fn find_account_set(blocks: &[EncodedConfirmedBlock]) -> PubkeyTxCountMap {

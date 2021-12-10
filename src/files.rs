@@ -1,4 +1,4 @@
-use std::{fs::{self, ReadDir, File}, path::{Path, PathBuf}, string::String, borrow::Borrow, time::{Duration, Instant}};
+use std::{fs::{self, ReadDir, File}, path::{Path, PathBuf}, string::String, borrow::Borrow, time::{Duration, Instant}, io};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{de, Deserialize};
 use solana_transaction_status::EncodedConfirmedBlock;
@@ -20,7 +20,7 @@ pub fn dir_file_paths(rd: ReadDir) -> Vec<PathBuf> {
             Ok(entry) => {
                 Some(entry.path())
             },
-            Err(e) => log_err_none(e) 
+            Err(e) => log_err_none(&e) 
         }
     })
     .filter_map(|o| o)
@@ -33,7 +33,7 @@ fn dir_file_names(rd: ReadDir) -> Vec<PathBuf> {
             Ok(entry) => {
                 Some(entry.file_name())
             },
-            Err(e) => log_err_none(e) 
+            Err(e) => log_err_none(&e) 
         }
     })
     .map(|o| {
@@ -109,10 +109,10 @@ pub fn load_block_json<P: AsRef<Path>>(path: P) -> Option<EncodedConfirmedBlock>
         Ok(data) => {
             match serde_json::from_slice::<EncodedConfirmedBlock>(&data) {
                 Ok(block) => Some(block),
-                Err(e) => log_err_none(e)
+                Err(e) => log_err_none(&e)
             }
         },
-        Err(e) => log_err_none(e)
+        Err(e) => log_err_none(&e)
     }
 }
 
@@ -121,10 +121,10 @@ pub fn load_blocks_chunk_json<P: AsRef<Path>>(path: P) -> Option<Vec<SlotData>> 
         Ok(data) => {
             match serde_json::from_slice::<Vec<SlotData>>(&data) {
                 Ok(slots) => Some(slots),
-                Err(e) => log_err_none(e)
+                Err(e) => log_err_none(&e)
             }
         },
-        Err(e) => log_err_none(e)
+        Err(e) => log_err_none(&e)
     }
 }
 
@@ -152,10 +152,10 @@ pub(crate) fn write_pubkey_counts(dir: String, counts: &CountedTxs) {
         Ok(json) => {
             match fs::write(&path, json) {
                 Ok(_) => println!("{} written", path),
-                Err(e) => log_err(e),
+                Err(e) => log_err(&e),
             }
         }
-        Err(e) => { log_err(e) }
+        Err(e) => { log_err(&e) }
     };
 }
 
@@ -198,8 +198,47 @@ pub(crate) fn write_blocks_json_chunk(chunk: &Vec<SlotData>) {
                 let _ = fs::write(p, data);
             }
         },
-        Err(e) => log_err(e),
+        Err(e) => log_err(&e),
     }
+}
+
+pub(crate) const BLOCK_SAMPLE_DIR: &str = "blocks\\json_sample";
+pub(crate) fn copy_sample<P: AsRef<Path>>(path: P, one_out_of: usize) -> Result<(), std::io::Error> {
+    println!("\ncopying 1 out of every {} slot_.json files to {}", one_out_of, BLOCK_SAMPLE_DIR);
+
+    let read_dir = fs::read_dir(path).unwrap();
+    let dir_paths = dir_file_paths(read_dir);
+    let sample_size = dir_paths.len() / one_out_of;
+
+    let i_range: Vec<usize> = (0..sample_size).into_iter().collect();
+
+    i_range.par_iter().for_each(|i| {
+        let src_i = i * one_out_of;
+        let src_path = &dir_paths[src_i];
+        println!("copy to sample:  {:?}", &src_path);
+
+        let mut src_file = File::open(src_path).unwrap();
+        let src_str = src_path.to_string_lossy();
+        let src_split = src_str.split("\\");
+
+        let last_split = src_split.last().unwrap();
+        //println!("last split:  {:?}", &last_split);
+
+        let dest_path = format!("{}/{}", BLOCK_SAMPLE_DIR, last_split);
+        //println!("dest path:  {:?}", &dest_path);
+
+        match File::create(dest_path) {
+            Ok(mut dest_file) => {
+                match io::copy(&mut src_file, &mut dest_file) {
+                    Ok(_) => {},
+                    Err(e) => { log_err(&e); },
+                };
+            },
+            Err(e) => { log_err(&e); },
+        }
+    });
+
+    Ok(())
 }
 
 fn parse_slot_num(slot_file_name: &str) -> Option<u64> {
@@ -212,7 +251,7 @@ fn parse_slot_num(slot_file_name: &str) -> Option<u64> {
     //println!("parsing file: {},  number:  {}", slot_file_name, num_str);
     match num_str.parse::<u64>() {
         Ok(n) => Some(n),
-        Err(e) => { log_err(e); None }
+        Err(e) => { log_err(&e); None }
     }
 }
 
@@ -294,6 +333,6 @@ pub(crate) fn dir_size_stats<P: AsRef<Path>>(path: P) -> Result<FileSizeStats, s
 pub(crate) fn get_file_size<P: AsRef<Path>>(path: P) -> u64 {
     match fs::metadata(path) {
         Ok(meta) => meta.len(),
-        Err(e) => { log_err(e); 0 },
+        Err(e) => { log_err(&e); 0 },
     }
 }
