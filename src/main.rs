@@ -1,13 +1,10 @@
-use std::{time::{Duration, Instant}, thread::{Thread, self}, fs, cmp::max};
+use std::{time::{Duration, Instant}, thread, fs, cmp::max};
 
-use client::{get_client, ClientWrapper};
-use rayon::ThreadPoolBuilder;
+use client::{get_client};
 use serde::{Deserialize, Serialize};
 use solana_program::clock::Slot;
-use solana_sdk::account::Account;
-use solana_transaction_status::{UiTransactionEncoding, EncodedConfirmedBlock};
 
-use crate::{files::{test_block_loads, test_size_average, chunk_existing_blocks, CHUNKED_BLOCKS_DIR}, util::{timer, duration_from_hours}};
+use crate::{files::{test_block_loads, test_size_average, chunk_existing_blocks, CHUNKED_BLOCKS_DIR}, util::{duration_from_hours}};
 
 pub mod client;
 pub mod util;
@@ -126,12 +123,13 @@ fn main() {
     println!("\nStarting Solana RPC client test\n");
 
     chunk_existing_blocks(100);
-    thread::sleep(Duration::from_secs(20));
+    thread::sleep(Duration::from_secs(120));
      
-    //test_block_loads();
-    //thread::sleep(Duration::from_secs(60));
+    test_block_loads();
+    thread::sleep(Duration::from_secs(60));
 
-    //test_size_average(CHUNKED_BLOCKS_DIR);
+    test_size_average(CHUNKED_BLOCKS_DIR);
+    thread::sleep(Duration::from_secs(60));
 
     scrape_loop(duration_from_hours(12));
 }

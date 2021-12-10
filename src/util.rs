@@ -20,8 +20,8 @@ pub fn time_run<T: FnOnce() -> R, R>(func: T) -> TimedData<R> {
 }
 
 pub(crate) fn duration_from_hours(hours: u64) -> Duration {
-    const secs_per_hour: u64 = 60 * 60;
-    Duration::from_secs(secs_per_hour * hours)
+    const SECS_PER_HOUR: u64 = 60 * 60;
+    Duration::from_secs(SECS_PER_HOUR * hours)
 }
 
 pub fn log_err<E: Debug + Display>(e: E) { eprintln!("{}", e); }

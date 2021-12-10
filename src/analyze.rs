@@ -1,20 +1,19 @@
-use std::{thread, time::{Duration, Instant}, collections::HashMap, ops::Deref, path::{Path, PathBuf}, cmp::min, str::FromStr};
+use std::{thread, time::{Duration, Instant}, collections::HashMap, path::{PathBuf}, cmp::min, str::FromStr};
 
-use rayon::iter::{ParallelIterator, IntoParallelRefIterator, IntoParallelIterator};
+use rayon::iter::{ParallelIterator, IntoParallelRefIterator};
 use solana_program::pubkey::Pubkey;
 use solana_sdk::transaction::Transaction;
 use solana_transaction_status::{EncodedConfirmedBlock, EncodedTransactionWithStatusMeta};
 
-use crate::files::{load_block_json, load_block_json_unwrap, write_pubkey_counts, load_blocks_chunk_json};
+use crate::files::{write_pubkey_counts, load_blocks_chunk_json};
 
 
 pub(crate) type PubkeyTxCount = (Pubkey, u32); 
 pub(crate) type PubkeyTxCountMap = HashMap<Pubkey, u32>; 
-pub(crate) type PubkeyTxCountVec = Vec<(Pubkey, u32)>; 
 
 pub(crate) struct CountedTxs<'a> {
     pub total: u32,
-    pub data: &'a PubkeyTxCountVec
+    pub data: &'a Vec<PubkeyTxCount>
 }
 
 pub fn process_block_stream(block_files: &[PathBuf]) {
@@ -66,7 +65,6 @@ pub fn process_blocks(blocks: &[EncodedConfirmedBlock]) {
 
         println!("block {}: height {}, {} txs @ {}", b.blockhash, height_str, b.transactions.len(), time);
 
-        return;
         b.transactions.iter().for_each(|tx_meta| {
             match &tx_meta.meta {
                 Some(m) => {
@@ -174,8 +172,6 @@ fn add_or_increment<T: Copy + Eq + std::hash::Hash>(key: T, hm: &mut HashMap<T, 
         std::collections::hash_map::Entry::Vacant(_) => { hm.insert(key, 1); },
     };
 }
-
-const SPECIAL_ADDR_STR: &str = "11111111111111111111111111111111";
 
 pub fn find_account_set_stream(block_files: &[PathBuf]) -> PubkeyTxCountMap {
     process_reduce_files_chunked::<EncodedConfirmedBlock, PubkeyTxCountMap>(block_files,

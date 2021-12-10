@@ -1,10 +1,9 @@
-use core::{fmt, num::{self}};
-use std::{fs::{self, ReadDir}, path::{Path, PathBuf}, string::String, fmt::Display, str::FromStr};
+use std::{fs::{self, ReadDir}, path::{Path, PathBuf}, string::String};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use solana_transaction_status::EncodedConfirmedBlock;
 use serde_json;
 
-use crate::{util::{log_err_none, log_err}, analyze::{process_block_stream, PubkeyTxCountMap, CountedTxs}};
+use crate::{util::{log_err_none, log_err}, analyze::{process_block_stream, CountedTxs}};
 
 
 
@@ -225,6 +224,8 @@ pub(crate) fn chunk_existing_blocks(chunk_len: usize) {
         if Path::exists(chunk_out_path) { 
             println!("skipping pre-existing chunk:  {}", chunk_out_path.to_string_lossy());
             return 
+        } else {
+
         }
 
         let slot_data: Vec<SlotData> = chunk.into_iter()
@@ -245,6 +246,8 @@ pub(crate) fn chunk_existing_blocks(chunk_len: usize) {
 
         write_blocks_json_chunk(&slot_data);
     });
+
+    println!("\nfinished writing chunks of blocks\n");
 }
 
 
