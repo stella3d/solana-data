@@ -157,11 +157,14 @@ pub(crate) fn write_blocks_json_chunk(chunk: &Vec<SlotData>) {
 
     match json_r {
         Ok(data) => {
-            let p = Path::new(&file_name);
-            if Path::exists(p) {
+            let f_str = &("/".to_string() + &file_name);
+            let p_str = format!("{}{}",CHUNKED_BLOCKS_DIR, f_str);
+            let p = Path::new(&p_str);
+
+            if Path::exists(&p) {
                 println!("file {} already present, not overriding", &file_name);
             } else {
-                print!("writing block chunk file:  {}\n", &file_name);
+                //print!("writing block chunk file:  {}\n", p.to_str().unwrap());
                 let _ = fs::write(p, data);
             }
         },
@@ -170,35 +173,33 @@ pub(crate) fn write_blocks_json_chunk(chunk: &Vec<SlotData>) {
 }
 
 fn parse_slot_num(slot_file_name: &str) -> Option<u64> {
-
     let underscore_split = slot_file_name.split("_");
     let num_with_extension = underscore_split.last()?;
 
     let mut dot_split = num_with_extension.split(".");
     let num_str: &str = dot_split.next()?;
 
-    println!("parsing file: {},  number:  {}", slot_file_name, num_str);
-
+    //println!("parsing file: {},  number:  {}", slot_file_name, num_str);
     match num_str.parse::<u64>() {
         Ok(n) => Some(n),
         Err(e) => { log_err(e); None }
     }
 }
 
-const CHUNKED_BLOCKS_DIR: &str = "blocks/json_chunked";
+pub(crate) const CHUNKED_BLOCKS_DIR: &str = "blocks/json_chunked";
 
-pub(crate) fn chunk_existing_blocks() {
-    let chunk_len: usize = 100;
+pub(crate) fn chunk_existing_blocks(chunk_len: usize) {
     println!("\ncopy existing single block files to {} block chunks...\n", chunk_len);
 
     let src_names = dir_file_names(fs::read_dir(BLOCKS_DIR).unwrap());
     let chunks: Vec<&[PathBuf]> = src_names.chunks(chunk_len).collect();
 
+    let mut dir_str = BLOCKS_DIR.to_owned();
+    dir_str.push_str("/");
+    let dir_path = Path::new(BLOCKS_DIR);
+
     chunks.par_iter().for_each(|&chunk| {
-        println!("start chunk");
-
-        let dir_path = Path::new(BLOCKS_DIR);
-
+        //println!("start chunk");
         let slot_data: Vec<SlotData> = chunk.into_iter()
             .filter_map(|name| {
                 let full_path = dir_path.join(name);
@@ -228,8 +229,8 @@ pub(crate) struct FileSizeStats {
     pub count: u64
 }
 
-pub fn test_size_average() {
-    let stats = dir_size_stats(BLOCKS_DIR).unwrap();
+pub fn test_size_average(dir: &str) {
+    let stats = dir_size_stats(dir).unwrap();
 
     println!("files:\n\tcount:{}\taverage: {} bytes\n", stats.count, stats.avg)
 
