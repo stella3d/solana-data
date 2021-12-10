@@ -4,7 +4,7 @@ use client::{get_client};
 use serde::{Deserialize, Serialize};
 use solana_program::clock::Slot;
 
-use crate::{files::{test_block_loads, test_size_average, chunk_existing_blocks, CHUNKED_BLOCKS_DIR}, util::{duration_from_hours}};
+use crate::{files::{test_block_loads, test_size_average, chunk_existing_blocks, CHUNKED_BLOCKS_DIR}, util::{duration_from_hours, log_err}};
 
 pub mod client;
 pub mod util;
@@ -15,6 +15,12 @@ pub mod files;
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 struct ScrapeState {
     pub last_slot: Slot,
+}
+
+impl Default for ScrapeState {
+    fn default() -> Self {
+        Self { last_slot: Default::default() }
+    }
 }
 
 fn scrape_loop(loop_duration: Duration) {
@@ -36,21 +42,17 @@ fn load_state() -> Result<ScrapeState, serde_json::Error> {
 }
 
 fn do_scrape() {
-    let state = load_state();
+    let prev_state = load_state();
     println!("\nDO LOOP");
-    println!("\nloaded previous run's state from file:\n{:?}", state);
+    println!("\nloaded previous run's state from file:\n{:?}", prev_state);
 
-    let mut state_raw = ScrapeState { last_slot: 0 };
-    match state {
+    match prev_state {
         Ok(s) => {
-            state_raw = s;
-            match scrape_blocks(state_raw) {
-                Some(s) => state_raw = s,
-                None => {},
+            if let Some(new_state) = scrape_blocks(s) {
+                save_state(new_state); 
             };
-            save_state(state_raw);
         },
-        Err(e) => eprintln!("{}", e)
+        Err(e) => log_err(e)
     }
 }
 
@@ -70,8 +72,9 @@ fn scrape_blocks(previous_state: ScrapeState) -> Option<ScrapeState> {
         return None; 
     }
 
-    let slot_count = max(slot - previous_state.last_slot, 1024);
-    let slots_r = client.rpc.get_blocks_with_limit(slot_count, 1024);
+    let backlog_limit: usize = 4096;
+    let slot_count = max(slot - previous_state.last_slot, backlog_limit as u64);
+    let slots_r = client.rpc.get_blocks_with_limit(slot_count, backlog_limit);
     let slots = match slots_r {
         Ok(s) => s,
         Err(_) => vec![],
@@ -103,25 +106,11 @@ fn loop_task(total_time: Duration, loop_fn: fn()) {
     println!("loop task finished after: {} milliseconds", start.elapsed().as_millis());
 }
 
-/*
-static SPECIAL_EXECUTABLE_OWNERS: [&str; 3] = 
-[
-    "NativeLoader1111111111111111111111111111111",
-    "BPFLoaderUpgradeab1e11111111111111111111111",
-    "BPFLoader2111111111111111111111111111111111",
-];
 
-static SPECIAL_OWNERS: [&str; 3] = 
-[
-    "11111111111111111111111111111111",
-    "Sysvar1111111111111111111111111111111111111",
-    "Vote111111111111111111111111111111111111111"
-];
-*/
 
 fn main() {
     println!("\nStarting Solana RPC client test\n");
-
+/* 
     chunk_existing_blocks(100);
     thread::sleep(Duration::from_secs(120));
      
@@ -130,6 +119,6 @@ fn main() {
 
     test_size_average(CHUNKED_BLOCKS_DIR);
     thread::sleep(Duration::from_secs(60));
-
+*/
     scrape_loop(duration_from_hours(12));
 }

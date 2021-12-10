@@ -1,5 +1,6 @@
-use std::{fs::{self, ReadDir}, path::{Path, PathBuf}, string::String};
+use std::{fs::{self, ReadDir, File}, path::{Path, PathBuf}, string::String, borrow::Borrow};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use serde::{de, Deserialize};
 use solana_transaction_status::EncodedConfirmedBlock;
 use serde_json;
 
@@ -86,6 +87,21 @@ pub fn write_json_encoded_block(slot: u64, block: &EncodedConfirmedBlock) {
         Err(e) => eprintln!("{}", e),
     }
 }
+
+pub fn load_blocks_generic<'a, P: AsRef<Path>, T: Deserialize<'a>>(path: P) -> Option<T> {
+    let data = fs::read(path).unwrap_or(vec![]);
+    let res: Option<T> = parse_blocks_gen(&data);
+    res
+}
+
+pub fn parse_blocks_gen<'a, T: Deserialize<'a>>(buffer: &'a Vec<u8>) -> Option<T> {
+    let b: &'a Vec<u8> = buffer;
+    match serde_json::from_slice::<'a, T>(b) {
+        Ok(block) => Some(block),
+        Err(e) => log_err_none(e)
+    }
+}
+
 
 pub fn load_block_json<P: AsRef<Path>>(path: P) -> Option<EncodedConfirmedBlock> {
     match fs::read(path) {
