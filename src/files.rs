@@ -224,8 +224,6 @@ pub(crate) fn chunk_existing_blocks(chunk_len: usize) {
         if Path::exists(chunk_out_path) { 
             println!("skipping pre-existing chunk:  {}", chunk_out_path.to_string_lossy());
             return 
-        } else {
-
         }
 
         let slot_data: Vec<SlotData> = chunk.into_iter()
