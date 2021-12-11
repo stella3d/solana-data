@@ -7,7 +7,8 @@ use crate::{
         BLOCKS_DIR,  CHUNKED_BLOCKS_DIR, 
         copy_sample, test_size_average, test_chunk_by_size, test_block_loads
     },
-    test_tasks::test_load_perf_by_size 
+    test_tasks::test_load_perf_by_size,
+    constants::TWO_MEGABYTES 
 };
 
 pub mod client;
@@ -17,9 +18,8 @@ pub mod files;
 pub mod cli;
 pub mod test_tasks;
 pub mod scrape;
+pub mod constants;
 
-const MEGABYTE: u64 = 1024 * 1024;
-const TWO_MEGABYTES: u64 = MEGABYTE * 2;
 
 fn main() {
     let cli_args = get_cli_args();

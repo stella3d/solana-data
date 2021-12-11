@@ -24,9 +24,7 @@ pub(crate) fn get_cli_args() -> CliArguments {
              .help("Which sub-command to run"));
 
     let matches = app.get_matches();
-
     let task = matches.value_of("task").unwrap_or("").clone().to_owned();
-    println!("\ntask: {}\n", task);
 
     CliArguments { task }
 }

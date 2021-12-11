@@ -1,5 +1,6 @@
-use std::time::{Duration, Instant};
-use std::fmt::{Debug, Display};
+use std::{time::{Duration, Instant}, fmt::{Debug, Display}};
+use crate::constants::SECS_PER_HOUR;
+
 
 pub fn loop_task<F: Fn() -> ()>(total_time: Duration, loop_fn: F) {
     let start = Instant::now();
@@ -29,7 +30,6 @@ pub fn time_run<T: FnOnce() -> R, R>(func: T) -> TimedData<R> {
 }
 
 pub(crate) fn duration_from_hours(hours: u64) -> Duration {
-    const SECS_PER_HOUR: u64 = 60 * 60;
     Duration::from_secs(SECS_PER_HOUR * hours)
 }
 
