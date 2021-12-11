@@ -19,7 +19,7 @@ const TWO_MEGABYTES: u64 = MEGABYTE * 2;
 
 const CHUNK_BLOCKS_TASK: &str = "chunk_blocks";
 const COUNT_KEY_TXS_TASK: &str = "count_txs";
-const AVERAGE_FILE_SIZE_TASK: &str = "avg_file_size";
+const MEAN_FILE_SIZE_TASK: &str = "mean_file_size";
 const SCRAPE_BLOCKS_TASK: &str = "scrape_blocks";
 
 fn main() {
@@ -41,7 +41,7 @@ fn main() {
         COUNT_KEY_TXS_TASK => {
             test_block_loads(CHUNKED_BLOCKS_DIR);
         },
-        AVERAGE_FILE_SIZE_TASK => {
+        MEAN_FILE_SIZE_TASK => {
             test_size_average(BLOCKS_DIR);
         },
         t => { 
