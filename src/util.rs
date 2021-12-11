@@ -29,7 +29,7 @@ pub fn time_run<T: FnOnce() -> R, R>(func: T) -> TimedData<R> {
     return TimedData { time: start.elapsed(), data: returned }
 }
 
-pub(crate) fn duration_from_hours(hours: u64) -> Duration {
+pub(crate) fn hours_duration(hours: u64) -> Duration {
     Duration::from_secs(SECS_PER_HOUR * hours)
 }
 

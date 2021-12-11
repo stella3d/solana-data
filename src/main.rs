@@ -1,14 +1,11 @@
 use crate::{
     cli::*,
-    client::DEVNET_RPC,
-    scrape::scrape_loop,
-    util::{duration_from_hours, println_each_indent}, 
+    util::{hours_duration, println_each_indent}, 
     files::{
         BLOCKS_DIR,  CHUNKED_BLOCKS_DIR, 
         timed_copy_sample, test_size_average, test_block_loads, 
     },
     test_tasks::{load_perf_by_size, test_chunk_by_size},
-    constants::TWO_MEGABYTES 
 };
 
 pub mod client;
@@ -27,11 +24,11 @@ fn main() {
     match cli_args.task.as_str() {
         SCRAPE_BLOCKS_TASK =>
             // TODO - make network and duration (in minutes) part of cli for this command
-            scrape_loop(duration_from_hours(12), &DEVNET_RPC),
+            scrape::scrape_loop(hours_duration(12), &client::DEVNET_RPC),
         CHUNK_BLOCKS_TASK =>
             // TODO - make chunk size part of cli for this command?
             // 2 megabyte chunks tested as by far the fastest to process on my machine
-            test_chunk_by_size(TWO_MEGABYTES),
+            test_chunk_by_size(constants::TWO_MEGABYTES),
         COUNT_KEY_TXS_TASK => 
             test_block_loads(CHUNKED_BLOCKS_DIR),
         MEAN_FILE_SIZE_TASK => 
