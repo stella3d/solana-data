@@ -32,9 +32,9 @@ pub fn process_block_stream(block_files: &[PathBuf]) {
         });
         
     println!("\nunique public keys counted: {}\n", acct_set.len());
+    
     accts_vec[(accts_vec.len() - 15)..].iter().for_each(|t| {
-        if t.1 > 2  {
-            println!("public key: {} - entries:  {}", t.0, t.1); }
+        println!("public key: {} - entries:  {}", t.0, t.1);
     });
 }
 
