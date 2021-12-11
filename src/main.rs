@@ -1,11 +1,13 @@
-use test_tasks::test_load_perf_by_size;
-
 use crate::{
     cli::*,
     client::DEVNET_RPC,
     scrape::scrape_loop,
-    util::duration_from_hours, 
-    files::{BLOCKS_DIR, test_size_average, test_chunk_by_size, test_block_loads, CHUNKED_BLOCKS_DIR}, 
+    util::{duration_from_hours, log_err}, 
+    files::{
+        BLOCKS_DIR,  CHUNKED_BLOCKS_DIR, 
+        copy_sample, test_size_average, test_chunk_by_size, test_block_loads
+    },
+    test_tasks::test_load_perf_by_size 
 };
 
 pub mod client;
@@ -41,6 +43,12 @@ fn main() {
         COMPARE_BLOCK_LOADS_TASK => {
             // TODO - take path as arg
             test_load_perf_by_size("blocks/sized");
+        },
+        BLOCK_SAMPLE_TASK => {
+            // TODO - take sample rate as arg, maybe src directory
+            if let Err(e) = copy_sample(BLOCKS_DIR, 50) {
+                log_err(&e)
+            };
         },
         t => { 
             if t.is_empty() { eprintln!("--task / -t argument required to do anything!\n") }

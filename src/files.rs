@@ -196,7 +196,7 @@ pub(crate) fn write_blocks_json_chunk(chunk: &Vec<SlotData>) {
     }
 }
 
-pub(crate) const BLOCK_SAMPLE_DIR: &str = "blocks\\json_sample";
+pub(crate) const BLOCK_SAMPLE_DIR: &str = "blocks/json_sample";
 pub(crate) fn copy_sample<P: AsRef<Path>>(path: P, one_out_of: usize) -> Result<(), std::io::Error> {
     println!("\ncopying 1 out of every {} slot_.json files to {}", one_out_of, BLOCK_SAMPLE_DIR);
 
