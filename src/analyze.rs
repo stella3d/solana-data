@@ -19,8 +19,6 @@ pub(crate) struct CountedTxs<'a> {
 pub fn process_block_stream(block_files: &[PathBuf]) {
     println!("testing chunked stream processing...");
 
-    let first_chunk = &block_files[0];
-
     let acct_set = find_account_set_stream(block_files);
 
     println!("done processing, converting to vec & sorting...");
@@ -32,13 +30,13 @@ pub fn process_block_stream(block_files: &[PathBuf]) {
         &CountedTxs { 
             total: accts_vec.len() as u32, data: &accts_vec 
         });
-
+    /*  
     accts_vec[(accts_vec.len() - 25)..].iter().for_each(|t| {
         if t.1 > 2  {
             println!("public key: {} - entries:  {}", t.0, t.1);
         }
     });
-
+    */
     println!("\nunique public keys counted: {}\n", acct_set.len());
 }
 
@@ -161,13 +159,13 @@ pub fn process_reduce_files_chunked<T, C: Send>(paths: &[PathBuf],
     }).collect();
 
     let reduce_start = Instant::now();
-    println!("finished parallel occurence count: {:2} seconds", (reduce_start - par_map_start).as_secs_f32());
-    println!("starting reduce(), @ {:?}", reduce_start);
+    println!("\nfinished parallel occurence count: {:2} seconds", (reduce_start - par_map_start).as_secs_f32());
+    //println!("starting reduce(), @ {:?}", reduce_start);
     
     let res = reduce(intermediates);
     
     let reduce_end = Instant::now();
-    println!("finished reduce(), @ {:?}", reduce_end);
+    //println!("finished reduce(), @ {:?}", reduce_end);
     println!("reduce() for {} elements took {}ms\n", paths.len(), (reduce_end - reduce_start).as_millis());
     res
 }

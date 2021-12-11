@@ -5,13 +5,20 @@ use serde::{de, Deserialize};
 use solana_transaction_status::EncodedConfirmedBlock;
 use serde_json;
 
-use crate::{util::{log_err_none, log_err}, analyze::{process_block_stream, CountedTxs}};
+use crate::{util::{log_err_none, log_err, timer}, analyze::{process_block_stream, CountedTxs}};
 
-
-
-pub fn test_block_loads() {
+pub fn test_block_loads_buf(chunked_blocks_dir: &PathBuf) {
     println!("\ntesting CHUNKED typed load of .json files...");
-    let paths = dir_file_paths(fs::read_dir(CHUNKED_BLOCKS_DIR).unwrap());
+    let paths = dir_file_paths(fs::read_dir(chunked_blocks_dir).unwrap());
+    process_block_stream(paths.as_slice());
+}
+
+pub fn test_block_loads(chunked_blocks_dir: &str) {
+    let mut dir = chunked_blocks_dir;
+    if dir.is_empty() { dir = CHUNKED_BLOCKS_DIR }
+
+    println!("\ntesting CHUNKED typed load of .json files...");
+    let paths = dir_file_paths(fs::read_dir(dir).unwrap());
     process_block_stream(paths.as_slice());
 }
 
@@ -427,4 +434,32 @@ pub(crate) fn get_file_size<P: AsRef<Path>>(path: P) -> u64 {
         Ok(meta) => meta.len(),
         Err(e) => { log_err(&e); 0 },
     }
+}
+
+pub(crate) fn test_load_perf_by_size(chunked_data_dir: &str) {
+    println!("\nstart load test on data dir:\n\t{}", chunked_data_dir);
+
+    match fs::read_dir(&chunked_data_dir) {
+        Ok(rd) => {
+            //let mut all_files = dir_file_paths(rd);
+            //all_files.sort();
+            //all_files.iter().for_each(|a| { println!("{:?}", a.as_os_str()) });
+            rd.into_iter().for_each(|e| {
+                match e {
+                    Ok(de) => {
+                        let path = de.path();
+                        let path_str = path.to_string_lossy();
+                        println!("attempting load test on chunked data dir:\n\t{}", path_str);
+                        
+                        let elapsed = timer(|| { 
+                            test_block_loads_buf(&path); 
+                        });
+                        println!("LOAD TIME:  {:3} seconds\n\n", elapsed.as_secs_f32());
+                    },
+                    Err(e) => log_err(&e),
+                }
+            });
+        },
+        Err(e) => log_err(&e),
+    };
 }
