@@ -1,6 +1,15 @@
 use std::time::{Duration, Instant};
 use std::fmt::{Debug, Display};
 
+pub fn loop_task<F: Fn() -> ()>(total_time: Duration, loop_fn: F) {
+    let start = Instant::now();
+    let end = start + total_time;
+    while Instant::now() < end {
+        loop_fn();
+    }
+    println!("loop task finished after {:3} seconds", start.elapsed().as_secs_f32());
+}
+
 pub struct TimedData<T> {
     pub time: Duration,
     pub data: T

@@ -1,4 +1,4 @@
-use std::{thread, time::{Duration, Instant}, collections::HashMap, path::{PathBuf, Path}, cmp::min, str::FromStr};
+use std::{thread, time::{Duration, Instant}, collections::HashMap, path::{PathBuf}, cmp::min, str::FromStr};
 
 use rayon::iter::{ParallelIterator, IntoParallelRefIterator};
 use solana_program::pubkey::Pubkey;
@@ -30,14 +30,12 @@ pub fn process_block_stream(block_files: &[PathBuf]) {
         &CountedTxs { 
             total: accts_vec.len() as u32, data: &accts_vec 
         });
-    /*  
-    accts_vec[(accts_vec.len() - 25)..].iter().for_each(|t| {
-        if t.1 > 2  {
-            println!("public key: {} - entries:  {}", t.0, t.1);
-        }
-    });
-    */
+        
     println!("\nunique public keys counted: {}\n", acct_set.len());
+    accts_vec[(accts_vec.len() - 15)..].iter().for_each(|t| {
+        if t.1 > 2  {
+            println!("public key: {} - entries:  {}", t.0, t.1); }
+    });
 }
 
 
@@ -149,7 +147,7 @@ pub fn process_reduce_files_chunked<U: Sized + Send, T, C: Send>(
 
     let map_end = Instant::now();
     let map_elapsed = map_end - map_start;
-    println!("\nfinished occurence count: {:3} seconds", map_elapsed.as_secs_f32());
+    println!("\nfinished map(each_chunk): {:3} seconds", map_elapsed.as_secs_f32());
 
     let reduce_start = Instant::now();
     // take all the sub-results, aggregate them into one result of same type
