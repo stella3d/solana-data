@@ -1,9 +1,9 @@
 use crate::{
+    cli::*,
     client::DEVNET_RPC,
     scrape::scrape_loop,
     util::{duration_from_hours, timer}, 
     files::{BLOCKS_DIR, test_size_average, test_chunk_by_size, test_block_loads, CHUNKED_BLOCKS_DIR}, 
-    cli::get_cli_args
 };
 
 pub mod client;
@@ -16,11 +16,6 @@ pub mod scrape;
 
 const MEGABYTE: u64 = 1024 * 1024;
 const TWO_MEGABYTES: u64 = MEGABYTE * 2;
-
-const CHUNK_BLOCKS_TASK: &str = "chunk_blocks";
-const COUNT_KEY_TXS_TASK: &str = "count_txs";
-const MEAN_FILE_SIZE_TASK: &str = "mean_file_size";
-const SCRAPE_BLOCKS_TASK: &str = "scrape_blocks";
 
 fn main() {
     let cli_args = get_cli_args();

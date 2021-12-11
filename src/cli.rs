@@ -1,5 +1,11 @@
 use clap::{self, Arg, App};
 
+
+pub(crate) const CHUNK_BLOCKS_TASK: &str = "chunk_blocks";
+pub(crate) const COUNT_KEY_TXS_TASK: &str = "count_txs";
+pub(crate) const MEAN_FILE_SIZE_TASK: &str = "mean_file_size";
+pub(crate) const SCRAPE_BLOCKS_TASK: &str = "scrape_blocks";
+
 pub(crate) struct CliArguments {
     pub task: String,
 }
