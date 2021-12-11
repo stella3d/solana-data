@@ -7,8 +7,8 @@ pub(crate) struct CliArguments {
 pub(crate) fn get_cli_args() -> CliArguments {
     let app = App::new("Solana Data Processing Playground")
     .version("0.1.0")
-    .author("stellz")
-    .about("personal solana data tools: rpc scraping & block analyzing")
+    .author("by: stellz")
+    .about("solana data toys: rpc scraping & analysis")
     .arg(Arg::with_name("task")
              .short("t")
              .long("task")
