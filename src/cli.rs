@@ -14,13 +14,7 @@ pub(crate) fn get_cli_args() -> CliArguments {
              .long("task")
              .takes_value(true)
              .help("Which sub-command to run"));
-             /* 
-    .arg(Arg::with_name("num")
-             .short("n")
-             .long("number")
-             .takes_value(true)
-             .help("Five less than your favorite number"));
-             */
+
     let matches = app.get_matches();
 
     let task = matches.value_of("task").unwrap_or("").clone().to_owned();
