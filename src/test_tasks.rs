@@ -1,4 +1,6 @@
-use std::fs::ReadDir;
+use std::{fs, path::{PathBuf}};
+
+use crate::{files::test_block_loads_buf, util::{timer, log_err}};
 
 
 pub(crate) fn test_load_perf_by_size(chunked_data_dir: &str) {
@@ -9,7 +11,7 @@ pub(crate) fn test_load_perf_by_size(chunked_data_dir: &str) {
             rd.into_iter().for_each(|dir_entry| {
                 match dir_entry {
                     Ok(de) => {
-                        let path: Path = de.path();
+                        let path: PathBuf = de.path();
                         let path_str = path.to_string_lossy();
                         if !path.exists() {
                             eprintln!("directory {} not found!", path_str);
