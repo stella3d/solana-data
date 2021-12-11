@@ -5,13 +5,14 @@ use serde::{Deserialize, Serialize};
 use solana_program::clock::Slot;
 
 use crate::{
-    util::{duration_from_hours, log_err, timer}, files::{test_load_perf_by_size, test_chunk_by_size}
+    util::{duration_from_hours, log_err, timer}, files::{BLOCKS_DIR, test_size_average, test_chunk_by_size, test_block_loads, CHUNKED_BLOCKS_DIR}, cli::get_cli_args
 };
 
 pub mod client;
 pub mod util;
 pub mod analyze;
 pub mod files;
+pub mod cli;
 
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
@@ -110,29 +111,37 @@ fn loop_task<F: Fn() -> ()>(total_time: Duration, loop_fn: F) {
 }
 
 const MEGABYTE: u64 = 1024 * 1024;
+const TWO_MEGABYTES: u64 = MEGABYTE * 2;
+
+const CHUNK_BLOCKS_TASK: &str = "chunk_blocks";
+const COUNT_KEY_TXS_TASK: &str = "count_txs";
+const AVERAGE_FILE_SIZE_TASK: &str = "avg_file_size";
+const SCRAPE_BLOCKS_TASK: &str = "scrape_blocks";
 
 fn main() {
-    println!("\nStarting Solana RPC client test\n");
-
-    /*
-    let chunk_elapsed = timer(|| {
-        test_chunk_by_size(MEGABYTE * 2);
-    });
-    println!("\nchunk by size elapsed:  {:3} seconds", chunk_elapsed.as_secs_f32());
-    thread::sleep(Duration::from_secs(1200)); 
-    */
-    // TODO - older chunk functions probably obsolete, remove
-    //test_block_loads();
-    //thread::sleep(Duration::from_secs(180));
-
-    /*
-    test_size_average(CHUNKED_BLOCKS_DIR);
-    thread::sleep(Duration::from_secs(600));
-    */
-
-    //test_load_perf_by_size("blocks/sized");
-    //thread::sleep(Duration::from_secs(600));
-
-    let rpc = DEVNET_RPC;
-    scrape_loop(duration_from_hours(12), &rpc);
+    let cli_args = get_cli_args();
+    match cli_args.task.as_str() {
+        SCRAPE_BLOCKS_TASK => {
+            // TODO - make network and duration (in minutes) part of cli for this command
+            let rpc = DEVNET_RPC;
+            scrape_loop(duration_from_hours(12), &rpc);
+        },
+        CHUNK_BLOCKS_TASK => {
+            let chunk_elapsed = timer(|| {
+            // TODO - make chunk size part of cli for this command?
+                test_chunk_by_size(TWO_MEGABYTES);
+            });
+            println!("\nchunk by size elapsed:  {:3} seconds", chunk_elapsed.as_secs_f32());
+        },
+        COUNT_KEY_TXS_TASK => {
+            test_block_loads(CHUNKED_BLOCKS_DIR);
+        },
+        AVERAGE_FILE_SIZE_TASK => {
+            test_size_average(BLOCKS_DIR);
+        },
+        t => { 
+            if t.is_empty() { eprintln!("--task / -t argument required to do anything!\n") }
+            else { eprintln!("task argument '{}' not recognized!\n", t) }
+        }
+    }
 }
