@@ -18,7 +18,7 @@ pub(crate) fn get_cli_args() -> CliArguments {
     let matches = app.get_matches();
 
     let task = matches.value_of("task").unwrap_or("").clone().to_owned();
-    println!("\nThe task passed is: {}\n", task);
+    println!("\ntask: {}\n", task);
 
     CliArguments { task }
 }
