@@ -183,26 +183,20 @@ pub(crate) fn copy_sample<P: AsRef<Path>>(path: P, one_out_of: usize) -> Result<
     i_range.par_iter().for_each(|i| {
         let src_i = i * one_out_of;
         let src_path = &dir_paths[src_i];
-        println!("copy to sample:  {:?}", &src_path);
+        //println!("copy to sample:  {:?}", &src_path);
 
-        let mut src_file = File::open(src_path).unwrap();
+        let mut src = File::open(src_path).unwrap();
         let src_str = src_path.to_string_lossy();
         let src_split = src_str.split("\\");
-
         let last_split = src_split.last().unwrap();
-        //println!("last split:  {:?}", &last_split);
-
         let dest_path = format!("{}/{}", BLOCK_SAMPLE_DIR, last_split);
-        //println!("dest path:  {:?}", &dest_path);
 
         match File::create(dest_path) {
-            Ok(mut dest_file) => {
-                match io::copy(&mut src_file, &mut dest_file) {
-                    Ok(_) => {},
-                    Err(e) => { log_err(&e); },
-                };
-            },
-            Err(e) => { log_err(&e); },
+            Ok(mut dest) => {
+                if let Err(e) = io::copy(&mut src, &mut dest) 
+                    { log_err(&e) }
+            }
+            Err(e) => log_err(&e),
         }
     });
 
