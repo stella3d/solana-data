@@ -13,6 +13,7 @@ pub mod util;
 pub mod analyze;
 pub mod files;
 pub mod cli;
+pub mod test_tasks;
 
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
