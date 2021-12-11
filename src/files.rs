@@ -106,14 +106,18 @@ pub fn parse_blocks_gen<'a, T: Deserialize<'a>>(buffer: &'a Vec<u8>) -> Option<T
 */
 
 pub fn load_block_json<P: AsRef<Path>>(path: P) -> Option<EncodedConfirmedBlock> {
-    match fs::read(path) {
+    match fs::read(&path) {
         Ok(data) => {
             match serde_json::from_slice::<EncodedConfirmedBlock>(&data) {
                 Ok(block) => Some(block),
                 Err(e) => log_err_none(&e)
             }
         },
-        Err(e) => log_err_none(&e)
+        Err(e) => {
+            let r = path.as_ref();
+            eprintln!("file not found:  {}", r.to_string_lossy());
+            log_err_none(&e)
+        }
     }
 }
 
@@ -267,8 +271,9 @@ pub(crate) const CHUNKED_BLOCKS_DIR: &str = "blocks/json_chunked";
 
 pub(crate) type SizedPath<'a> = (&'a PathBuf, u64);
 
+
 pub(crate) fn test_chunk_by_size(byte_count: u64) {
-    println!("testing chunking by size:  {} bytes max per chunk", byte_count);
+    println!("testing chunking by size:  {} kilobytes max per chunk", byte_count / 1024);
     chunk_blocks_by_size(BLOCKS_DIR, byte_count);
 }
 
@@ -278,43 +283,55 @@ pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
         .map(|p| (p, get_file_size(p)))
         .collect();
 
-    const chunk_count: usize = 24;
-    let chunk_len = src_sizes.len() / chunk_count;
-    let sizes_chunks: Vec<&[SizedPath]> = src_sizes.chunks(chunk_len).collect();
+    println!("got source file sizes, count:  {}", src_sizes.len());
 
-    let input_path_chunks: Vec<Arc<Vec<&PathBuf>>> = sizes_chunks
+    const TASK_COUNT: usize = 24;
+    let task_len = src_sizes.len() / TASK_COUNT;
+    let sizes_chunks: Vec<&[SizedPath]> = src_sizes.chunks(task_len).collect();
+
+    let input_path_chunks: Vec<Vec<&PathBuf>> = sizes_chunks
         .par_iter()
         .flat_map(|&chunk| {
-            let mut chunk_outputs = Vec::<Arc<Vec<&PathBuf>>>::new();
+            let mut chunk_outputs = Vec::<Vec<&PathBuf>>::new();
             let mut data = Vec::<&PathBuf>::new();
 
-            let mut size_counter: u64 = 0;
-            chunk.iter().for_each(|&sp| {
-                let size = sp.1;
-                if size_counter + size > max_input_bytes {
-                    println!("creating input chunk:  {} bytes", size_counter);
-                    chunk_outputs.push(Arc::new(data));
-                    data = Vec::<&PathBuf>::new();
-                    size_counter = 0;
+            let mut size_count: u64 = 0;
+            chunk.iter().for_each(|&sized_path| {
+                let path = sized_path.0;
+                let size = sized_path.1;
+
+                let mut pushed = false;
+                if size > max_input_bytes && size_count == 0 {
+                    // this one block is bigger than our target chunk size, make a chunk of 1
+                    println!("single block chunk:  {} bytes", size);
+                    data.push(path);
+                    size_count += size;
+                    pushed = true;
                 }
-                
-                size_counter += size;
-                data.push(sp.0);
+                if pushed || size_count + size > max_input_bytes {
+                    println!("creating input chunk:  {} bytes,  {} blocks", size_count, data.len());
+                    chunk_outputs.push(data.clone());
+                    data.clear();
+                    size_count = 0;
+                }
+                if !pushed { 
+                    data.push(path); 
+                    size_count += size;
+                }
             });
 
             chunk_outputs
-        })
-        .collect();
+        }).collect();
+    
+    println!("got vec<vec<PathBuf>> of input paths, len:  {}", input_path_chunks.len());
 
-
-    let dir_path = get_blocks_dir();
+    //let dir_path = get_blocks_dir();
     input_path_chunks.par_iter().for_each(|chunk| {
-        let slot_data: Vec<SlotData> = chunk.into_iter()
-        .filter_map(|name| {
-            let full_path = dir_path.join(name);
-            match load_block_json(full_path) {
+        let slot_data: Vec<SlotData> = chunk.iter()
+        .filter_map(|&path| {
+            match load_block_json(path) {
                 Some(ecb) => {
-                    let as_str = name.as_os_str().to_str()?;
+                    let as_str = path.as_os_str().to_str()?;
                     match parse_slot_num(as_str) {
                         Some(num) => Some((num, ecb)),
                         None => None,
@@ -324,9 +341,13 @@ pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
             }
         })
         .collect(); 
-    
+
+        //let f = slot_data.first().unwrap();
+        //let l = slot_data.last().unwrap();
+        //println!("chunk write:  {} - {}", f.0, l.0);
         write_blocks_json_chunk(&slot_data);
     });
+    println!("done running:  chunk_blocks_by_size()");
 }
 
 fn get_blocks_dir<'a>() -> &'a Path {

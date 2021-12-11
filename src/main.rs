@@ -112,21 +112,33 @@ fn loop_task<F: Fn() -> ()>(total_time: Duration, loop_fn: F) {
     println!("loop task finished after: {} milliseconds", start.elapsed().as_millis());
 }
 
+const MEGABYTE: u64 = 1024 * 1024;
+/*
+const TWO_MEGABYTES: u64 = MEGABYTE * 2; 
+const TWELVE_MEGABYTES: u64 = MEGABYTE * 12;
+const FOUR_MEGABYTES: u64 = MEGABYTE * 4; 
+const EIGHT_MEGABYTES: u64 = MEGABYTE * 8; 
+const SIXTEEN_MEGABYTES: u64 = MEGABYTE * 16;
+const THIRTY_TWO_MEGABYTES: u64 = MEGABYTE * 32;
+const TWENTY_FOUR_MEGABYTES: u64 = MEGABYTE * 24;
+const FOURTY_EIGHT_MEGABYTES: u64 = MEGABYTE * 48;
+const SIXTY_FOUR_MEGABYTES: u64 = MEGABYTE * 64;
+*/
+const NINETY_SIX_MEGABYTES: u64 = MEGABYTE * 96;
 
 fn main() {
     println!("\nStarting Solana RPC client test\n");
 
-    let chunk_byte_size = 1024 * 1024 * 4; // 4MB
-    test_chunk_by_size(chunk_byte_size);
-    thread::sleep(Duration::from_secs(180)); 
+    test_chunk_by_size(NINETY_SIX_MEGABYTES);
+    thread::sleep(Duration::from_secs(600)); 
 
+    /* 
     //chunk_existing_blocks(80);
     //thread::sleep(Duration::from_secs(15)); 
      
     //copy_sample(BLOCKS_DIR, 50);
     //thread::sleep(Duration::from_secs(600));
 
-    /* 
     test_block_loads();
     thread::sleep(Duration::from_secs(180));
 
@@ -134,8 +146,6 @@ fn main() {
     thread::sleep(Duration::from_secs(600));
     */
 
-    
-
-    let rpc = MAINNET_RPC;
-    scrape_loop(duration_from_hours(4), &rpc);
+    let rpc = DEVNET_RPC;
+    scrape_loop(duration_from_hours(12), &rpc);
 }
