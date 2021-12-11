@@ -75,7 +75,7 @@ fn scrape_blocks(previous_state: ScrapeState, rpc_url: &str) -> Option<ScrapeSta
         return None; 
     }
 
-    let backlog_limit: usize = 4096;
+    let backlog_limit: usize = 1024;
     let slot_count = max(slot - previous_state.last_slot, backlog_limit as u64);
     let slots_r = client.rpc.get_blocks_with_limit(slot_count, backlog_limit);
     let slots = match slots_r {
