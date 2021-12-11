@@ -162,9 +162,9 @@ pub fn process_reduce_files_chunked<U: Sized + Send, T, C: Send>(
     let reduce_end = Instant::now();
 
     let reduce_elapsed = reduce_end - reduce_start;
-    println!("finished reduce():  {:3} seconds\n", reduce_elapsed.as_secs_f32());
+    println!("finished reduce():  {:3} seconds", reduce_elapsed.as_secs_f32());
     let total_elapsed = map_elapsed + reduce_elapsed;
-    println!("total time to process {} chunks:  {:3} seconds", paths.len(), total_elapsed.as_secs_f32());
+    println!("total time to process {} chunks:  {:3} seconds\n", paths.len(), total_elapsed.as_secs_f32());
 
     result
 }
