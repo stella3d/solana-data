@@ -36,3 +36,8 @@ pub(crate) fn duration_from_hours(hours: u64) -> Duration {
 pub fn log_err<E: Debug + Display>(e: &E) { eprintln!("{}", e); }
 
 pub fn log_err_none<T, E: Debug + Display>(e: E) -> Option<T> { eprintln!("{}", e); None }
+
+pub(crate) fn println_each_indent<T: Display>(data: &[T], end_newline: bool) {
+    data.iter().for_each(|d| println!("    {}", d));
+    if end_newline { println!("") }
+}

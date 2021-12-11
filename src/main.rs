@@ -2,7 +2,7 @@ use crate::{
     cli::*,
     client::DEVNET_RPC,
     scrape::scrape_loop,
-    util::{duration_from_hours, log_err}, 
+    util::{duration_from_hours, log_err, println_each_indent}, 
     files::{
         BLOCKS_DIR,  CHUNKED_BLOCKS_DIR, 
         copy_sample, test_size_average, test_block_loads
@@ -42,8 +42,10 @@ fn main() {
             // TODO - take sample rate as arg, maybe src directory
             if let Err(e) = copy_sample(BLOCKS_DIR, 50) { log_err(&e) },
         t => { 
-            if t.is_empty() { eprintln!("--task / -t argument required!\n") }
-            else { eprintln!("task argument '{}' not recognized!\n", t) }
+            if t.is_empty() { eprintln!("\n--task / -t argument required!") }
+            else { eprintln!("\ntask argument '{}' not recognized!", t) }
+            println!("available tasks:");
+            println_each_indent(&TASK_NAMES, true); 
         }
     }
 }
