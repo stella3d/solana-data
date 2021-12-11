@@ -338,13 +338,6 @@ pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
     println!("done running:  chunk_blocks_by_size()");
 }
 
-fn get_blocks_dir<'a>() -> &'a Path {
-    let mut dir_str = BLOCKS_DIR.to_owned();
-    dir_str.push_str("/");
-    Path::new(BLOCKS_DIR)
-}
-
-
 #[derive(Debug)]
 pub(crate) struct FileSizeStats {
     pub avg: u64,
