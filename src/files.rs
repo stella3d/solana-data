@@ -262,8 +262,11 @@ pub(crate) type SizedPath<'a> = (&'a PathBuf, u64);
 
 
 pub(crate) fn test_chunk_by_size(byte_count: u64) {
-    println!("testing chunking by size:  {} kilobytes max per chunk", byte_count / 1024);
-    chunk_blocks_by_size(BLOCKS_DIR, byte_count);
+    println!("testing chunk by size:  {} kb per chunk max", byte_count / 1024);
+    let elapsed = timer(|| {
+        chunk_blocks_by_size(BLOCKS_DIR, byte_count);
+    });
+    println!("\nchunk by size done, time:  {:3} seconds", elapsed.as_secs_f32());
 }
 
 pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
@@ -369,32 +372,4 @@ pub(crate) fn get_file_size<P: AsRef<Path>>(path: P) -> u64 {
         Ok(meta) => meta.len(),
         Err(e) => { log_err(&e); 0 },
     }
-}
-
-pub(crate) fn test_load_perf_by_size(chunked_data_dir: &str) {
-    println!("\nstart load test on data dir:\n\t{}", chunked_data_dir);
-
-    match fs::read_dir(&chunked_data_dir) {
-        Ok(rd) => {
-            //let mut all_files = dir_file_paths(rd);
-            //all_files.sort();
-            //all_files.iter().for_each(|a| { println!("{:?}", a.as_os_str()) });
-            rd.into_iter().for_each(|e| {
-                match e {
-                    Ok(de) => {
-                        let path = de.path();
-                        let path_str = path.to_string_lossy();
-                        println!("attempting load test on chunked data dir:\n\t{}", path_str);
-                        
-                        let elapsed = timer(|| { 
-                            test_block_loads_buf(&path); 
-                        });
-                        println!("LOAD TIME:  {:3} seconds\n\n", elapsed.as_secs_f32());
-                    },
-                    Err(e) => log_err(&e),
-                }
-            });
-        },
-        Err(e) => log_err(&e),
-    };
 }
