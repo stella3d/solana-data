@@ -125,49 +125,48 @@ pub fn process_reduce_files<T, C: Send>(paths: &[PathBuf],
 
     println!("starting single-threaded reduce(), @ {:?}", reduce_start);
     
-    let res = reduce(intermediates);
+    let result = reduce(intermediates);
     
     let reduce_end = Instant::now();
     println!("finished reduce(), @ {:?}", reduce_end);
-    println!("reduce() for {} elements took {}ms\n", paths.len(), (reduce_end - reduce_start).as_millis());
-    res
+
+    let reduce_elapsed = reduce_end - reduce_start;
+    println!("reduce() for {} elements took {}ms\n", paths.len(), reduce_elapsed.as_millis());
+
+    result
 }
 
-type LoadChunkFileFn<P: AsRef<Path>> = fn(&P) -> Option<Vec<(u64, EncodedConfirmedBlock)>>;
-
-fn blocks_json_file_len(path: &PathBuf, load_file: LoadChunkFileFn<PathBuf>) -> Option<usize> {
-    if let Some(data) = load_file(&path) {
-        Some(data.len()) 
-    } 
-    else { None }
-}
-
-pub fn process_reduce_files_chunked<T, C: Send>(paths: &[PathBuf], 
-    load_chunk_file: fn(&PathBuf) -> Option<Vec<(u64, T)>>, 
-    each_chunk: fn(&[(u64, T)]) -> C, 
+pub fn process_reduce_files_chunked<U: Sized + Send, T, C: Send>(
+    paths: &[PathBuf], 
+    load_chunk_file: fn(&PathBuf) -> Option<Vec<(U, T)>>, 
+    each_chunk: fn(&[(U, T)]) -> C, 
     reduce: fn(Vec<C>) -> C) 
     -> C
 {
-    let par_map_start = Instant::now();
-    //let first_path = paths.first()?;
+    let map_start = Instant::now();
 
-    let intermediates: Vec<C> = paths.par_iter()
+    // in parallel, load & parse each chunk, before running supplied fn on the data
+    let sub_results: Vec<C> = paths.par_iter()
     .map(|chunk_path| {
-        //println!("start chunk: @ {:?},", Instant::now());
-        let typed: Vec<(u64, T)> = load_chunk_file(chunk_path).unwrap();
+        let typed: Vec<(U, T)> = load_chunk_file(chunk_path).unwrap();
         each_chunk(typed.as_slice())
     }).collect();
 
+    let map_end = Instant::now();
+    let map_elapsed = map_end - map_start;
+    println!("\nfinished occurence count: {:3} seconds", map_elapsed.as_secs_f32());
+
     let reduce_start = Instant::now();
-    println!("\nfinished parallel occurence count: {:2} seconds", (reduce_start - par_map_start).as_secs_f32());
-    //println!("starting reduce(), @ {:?}", reduce_start);
-    
-    let res = reduce(intermediates);
-    
+    // take all the sub-results, aggregate them into one result of same type
+    let result = reduce(sub_results);
     let reduce_end = Instant::now();
-    //println!("finished reduce(), @ {:?}", reduce_end);
-    println!("reduce() for {} elements took {}ms\n", paths.len(), (reduce_end - reduce_start).as_millis());
-    res
+
+    let reduce_elapsed = reduce_end - reduce_start;
+    println!("finished reduce():  {:3} seconds\n", reduce_elapsed.as_secs_f32());
+    let total_elapsed = map_elapsed + reduce_elapsed;
+    println!("total time to process {} chunks:  {:3} seconds", paths.len(), total_elapsed.as_secs_f32());
+
+    result
 }
 
 fn add_or_increment<T: Copy + Eq + std::hash::Hash>(key: T, hm: &mut HashMap<T, u32>) {
@@ -216,14 +215,13 @@ fn reduce_count_chunk(chunk: &[PubkeyTxCountMap]) -> PubkeyTxCountMap {
 }
 
 pub fn find_account_set_stream(block_files: &[PathBuf]) -> PubkeyTxCountMap {
-    process_reduce_files_chunked::<EncodedConfirmedBlock, PubkeyTxCountMap>(block_files,
-|p| {
-            load_blocks_chunk_json(p)
-        } ,
+    process_reduce_files_chunked::<u64, EncodedConfirmedBlock, PubkeyTxCountMap>(
+        block_files,
+|p| { load_blocks_chunk_json(p) },
     // for each chunk, count occurences (parallel)
 find_account_set_tuple,
     // aggregate all occurence counts (single thread, but fast)
-    reduce_count_map)
+        reduce_count_map)
 }
 
 pub fn find_account_set(blocks: &[EncodedConfirmedBlock]) -> PubkeyTxCountMap {
