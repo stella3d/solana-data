@@ -23,28 +23,26 @@ pub mod constants;
 
 fn main() {
     let cli_args = get_cli_args();
+    
     match cli_args.task.as_str() {
-        SCRAPE_BLOCKS_TASK => {
+        SCRAPE_BLOCKS_TASK =>
             // TODO - make network and duration (in minutes) part of cli for this command
-            let rpc = DEVNET_RPC;
-            scrape_loop(duration_from_hours(12), &rpc);
-        },
-        CHUNK_BLOCKS_TASK => {
+            scrape_loop(duration_from_hours(12), &DEVNET_RPC),
+        CHUNK_BLOCKS_TASK =>
             // TODO - make chunk size part of cli for this command?
             // 2 megabyte chunks tested as by far the fastest to process on my machine
-            test_chunk_by_size(TWO_MEGABYTES);
-        },
-        COUNT_KEY_TXS_TASK => test_block_loads(CHUNKED_BLOCKS_DIR),
-        MEAN_FILE_SIZE_TASK => test_size_average(BLOCKS_DIR),
-        COMPARE_BLOCK_LOADS_TASK => load_perf_by_size("blocks/sized"),
-        BLOCK_SAMPLE_TASK => {
+            test_chunk_by_size(TWO_MEGABYTES),
+        COUNT_KEY_TXS_TASK => 
+            test_block_loads(CHUNKED_BLOCKS_DIR),
+        MEAN_FILE_SIZE_TASK => 
+            test_size_average(BLOCKS_DIR),
+        COMPARE_BLOCK_LOADS_TASK => 
+            load_perf_by_size("blocks/sized"),
+        BLOCK_SAMPLE_TASK => 
             // TODO - take sample rate as arg, maybe src directory
-            if let Err(e) = copy_sample(BLOCKS_DIR, 50) {
-                log_err(&e)
-            };
-        },
+            if let Err(e) = copy_sample(BLOCKS_DIR, 50) { log_err(&e) },
         t => { 
-            if t.is_empty() { eprintln!("--task / -t argument required to do anything!\n") }
+            if t.is_empty() { eprintln!("--task / -t argument required!\n") }
             else { eprintln!("task argument '{}' not recognized!\n", t) }
         }
     }
