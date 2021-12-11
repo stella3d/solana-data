@@ -113,23 +113,18 @@ pub fn process_reduce_files<T, C: Send>(paths: &[PathBuf],
 
     let intermediates: Vec<C> = path_chunks.par_iter()
     .map(|&chunk| {
-        //let first = chunk.first().unwrap().to_str().unwrap();
-        //let last = chunk.last().unwrap().to_str().unwrap();
-        //println!("start chunk: {}  -  {}  @ {:?},", first, last, Instant::now());
         let typed: Vec<T> = chunk.iter().map(load_file).collect();
         each_chunk(typed.as_slice())
     }).collect();
 
     let reduce_start = Instant::now();
     println!("finished parallel chunked count: {:2} seconds", (reduce_start - par_map_start).as_secs_f32());
-
     println!("starting single-threaded reduce(), @ {:?}", reduce_start);
     
     let result = reduce(intermediates);
     
     let reduce_end = Instant::now();
     println!("finished reduce(), @ {:?}", reduce_end);
-
     let reduce_elapsed = reduce_end - reduce_start;
     println!("reduce() for {} elements took {}ms\n", paths.len(), reduce_elapsed.as_millis());
 
