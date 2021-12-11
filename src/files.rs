@@ -3,7 +3,7 @@ use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use solana_transaction_status::EncodedConfirmedBlock;
 use serde_json;
 
-use crate::{util::{log_err_none, log_err}, analyze::{process_block_stream, CountedTxs}};
+use crate::{util::{log_err_none, log_err, timer}, analyze::{process_block_stream, CountedTxs}};
 
 pub fn test_block_loads_buf(chunked_blocks_dir: &PathBuf) {
     println!("\ntesting chunked, typed load of .json files...");
@@ -31,34 +31,6 @@ pub fn dir_file_paths(rd: ReadDir) -> Vec<PathBuf> {
     })
     .filter_map(|o| o)
     .collect()
-}
-
-pub fn load_blocks_json_par<P: AsRef<Path>>(dir: P) -> Vec<EncodedConfirmedBlock> {
-    let rd = fs::read_dir(dir).unwrap();
-    let file_paths = dir_file_paths(rd);
-    println!("{} files in dir", file_paths.len());
-    // not using full paths might break later, but easy to fix
-    file_paths.par_iter().map(load_block_json)
-    .filter_map(|opt| opt)
-    .collect()
-}
-
-// assumes every file in folder is a blocks json
-pub fn load_blocks_json(dir: ReadDir) -> Vec<EncodedConfirmedBlock> {
-    let mut blocks = Vec::<EncodedConfirmedBlock>::new();
-
-    dir.into_iter().for_each(|result| {
-        match result {
-            Ok(entry) => {
-                match load_block_json(entry.path()) {
-                    Some(b) => blocks.push(b),
-                    None => println!("FAILED to load block .json:  {}", entry.file_name().to_str().unwrap()),
-                }
-            },
-            Err(e) => eprintln!("{}", e),
-        }
-    });
-    blocks
 }
 
 pub(crate) const BLOCKS_DIR: &str = "blocks/json";
@@ -173,10 +145,11 @@ pub(crate) fn write_blocks_json_chunk(chunk: &Vec<SlotData>) {
 pub(crate) const BLOCK_SAMPLE_DIR: &str = "blocks/json_sample";
 pub(crate) fn copy_sample<P: AsRef<Path>>(path: P, one_out_of: usize) -> Result<(), std::io::Error> {
     println!("\ncopying 1 out of every {} slot_.json files to {}", one_out_of, BLOCK_SAMPLE_DIR);
-
+    
     let read_dir = fs::read_dir(path).unwrap();
     let dir_paths = dir_file_paths(read_dir);
     let sample_size = dir_paths.len() / one_out_of;
+    println!("sample size:  {}", sample_size);
 
     let i_range: Vec<usize> = (0..sample_size).into_iter().collect();
 
@@ -201,6 +174,13 @@ pub(crate) fn copy_sample<P: AsRef<Path>>(path: P, one_out_of: usize) -> Result<
     });
 
     Ok(())
+}
+
+pub(crate) fn timed_copy_sample<P: AsRef<Path>>(path: P, one_out_of: usize) {
+    let elapsed = timer(|| {
+        if let Err(e) = copy_sample(path, one_out_of) { log_err(&e) }
+    });
+    println!("file sample copy done, time:  {:3} seconds\n", elapsed.as_secs_f32());
 }
 
 fn parse_slot_num(slot_file_name: &str) -> Option<u64> {

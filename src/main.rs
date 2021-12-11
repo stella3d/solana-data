@@ -2,10 +2,10 @@ use crate::{
     cli::*,
     client::DEVNET_RPC,
     scrape::scrape_loop,
-    util::{duration_from_hours, log_err, println_each_indent}, 
+    util::{duration_from_hours, println_each_indent}, 
     files::{
         BLOCKS_DIR,  CHUNKED_BLOCKS_DIR, 
-        copy_sample, test_size_average, test_block_loads
+        timed_copy_sample, test_size_average, test_block_loads, 
     },
     test_tasks::{load_perf_by_size, test_chunk_by_size},
     constants::TWO_MEGABYTES 
@@ -40,7 +40,7 @@ fn main() {
             load_perf_by_size("blocks/sized"),
         BLOCK_SAMPLE_TASK => 
             // TODO - take sample rate as arg, maybe src directory
-            if let Err(e) = copy_sample(BLOCKS_DIR, 50) { log_err(&e) },
+            timed_copy_sample(BLOCKS_DIR, 50),
         t => { 
             if t.is_empty() { eprintln!("\n--task / -t argument required!") }
             else { eprintln!("\ntask argument '{}' not recognized!", t) }
