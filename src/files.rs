@@ -3,10 +3,10 @@ use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use solana_transaction_status::EncodedConfirmedBlock;
 use serde_json;
 
-use crate::{util::{log_err_none, log_err, timer}, analyze::{process_block_stream, CountedTxs}};
+use crate::{util::{log_err_none, log_err}, analyze::{process_block_stream, CountedTxs}};
 
 pub fn test_block_loads_buf(chunked_blocks_dir: &PathBuf) {
-    println!("\ntesting CHUNKED typed load of .json files...");
+    println!("\ntesting chunked, typed load of .json files...");
     let paths = dir_file_paths(fs::read_dir(chunked_blocks_dir).unwrap());
     process_block_stream(paths.as_slice());
 }
@@ -15,7 +15,7 @@ pub fn test_block_loads(chunked_blocks_dir: &str) {
     let mut dir = chunked_blocks_dir;
     if dir.is_empty() { dir = CHUNKED_BLOCKS_DIR }
 
-    println!("\ntesting CHUNKED typed load of .json files...");
+    println!("\ntesting chunked, typed load of .json files...");
     let paths = dir_file_paths(fs::read_dir(dir).unwrap());
     process_block_stream(paths.as_slice());
 }
@@ -260,14 +260,6 @@ pub(crate) const CHUNKED_BLOCKS_DIR: &str = "blocks/json_chunked";
 
 pub(crate) type SizedPath<'a> = (&'a PathBuf, u64);
 
-
-pub(crate) fn test_chunk_by_size(byte_count: u64) {
-    println!("testing chunk by size:  {} kb per chunk max", byte_count / 1024);
-    let elapsed = timer(|| {
-        chunk_blocks_by_size(BLOCKS_DIR, byte_count);
-    });
-    println!("\nchunk by size done, time:  {:3} seconds", elapsed.as_secs_f32());
-}
 
 pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
     let src_paths = dir_file_paths(fs::read_dir(blocks_dir).unwrap());
