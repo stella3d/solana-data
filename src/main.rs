@@ -127,8 +127,9 @@ fn main() {
             scrape_loop(duration_from_hours(12), &rpc);
         },
         CHUNK_BLOCKS_TASK => {
-            let chunk_elapsed = timer(|| {
             // TODO - make chunk size part of cli for this command?
+            let chunk_elapsed = timer(|| {
+            // 2 megabyte chunks tested as by far the fastest to process on my machine
                 test_chunk_by_size(TWO_MEGABYTES);
             });
             println!("\nchunk by size elapsed:  {:3} seconds", chunk_elapsed.as_secs_f32());
