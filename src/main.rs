@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use solana_program::clock::Slot;
 
 use crate::{
-    files::{test_block_loads, test_size_average, chunk_existing_blocks, CHUNKED_BLOCKS_DIR, copy_sample, BLOCK_SAMPLE_DIR, BLOCKS_DIR}, 
+    files::{test_block_loads, test_size_average, chunk_existing_blocks, CHUNKED_BLOCKS_DIR, copy_sample, BLOCK_SAMPLE_DIR, BLOCKS_DIR, test_chunk_by_size}, 
     util::{duration_from_hours, log_err}
 };
 
@@ -116,6 +116,10 @@ fn loop_task<F: Fn() -> ()>(total_time: Duration, loop_fn: F) {
 fn main() {
     println!("\nStarting Solana RPC client test\n");
 
+    let chunk_byte_size = 1024 * 1024 * 4; // 4MB
+    test_chunk_by_size(chunk_byte_size);
+    thread::sleep(Duration::from_secs(180)); 
+
     //chunk_existing_blocks(80);
     //thread::sleep(Duration::from_secs(15)); 
      
@@ -129,6 +133,8 @@ fn main() {
     test_size_average(CHUNKED_BLOCKS_DIR);
     thread::sleep(Duration::from_secs(600));
     */
+
+    
 
     let rpc = MAINNET_RPC;
     scrape_loop(duration_from_hours(4), &rpc);

@@ -1,4 +1,5 @@
-use std::{fs::{self, ReadDir, File}, path::{Path, PathBuf}, string::String, borrow::Borrow, time::{Duration, Instant}, io};
+use core::sync;
+use std::{fs::{self, ReadDir, File}, path::{Path, PathBuf}, string::String, borrow::Borrow, time::{Duration, Instant}, io, cell::Ref, sync::Arc};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{de, Deserialize};
 use solana_transaction_status::EncodedConfirmedBlock;
@@ -263,6 +264,76 @@ fn slot_num_from_path(slot_path: &PathBuf) -> Option<u64> {
 }
 
 pub(crate) const CHUNKED_BLOCKS_DIR: &str = "blocks/json_chunked";
+
+pub(crate) type SizedPath<'a> = (&'a PathBuf, u64);
+
+pub(crate) fn test_chunk_by_size(byte_count: u64) {
+    println!("testing chunking by size:  {} bytes max per chunk", byte_count);
+    chunk_blocks_by_size(BLOCKS_DIR, byte_count);
+}
+
+pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
+    let src_paths = dir_file_paths(fs::read_dir(blocks_dir).unwrap());
+    let src_sizes: Vec<SizedPath> = src_paths.par_iter()
+        .map(|p| (p, get_file_size(p)))
+        .collect();
+
+    const chunk_count: usize = 24;
+    let chunk_len = src_sizes.len() / chunk_count;
+    let sizes_chunks: Vec<&[SizedPath]> = src_sizes.chunks(chunk_len).collect();
+
+    let input_path_chunks: Vec<Arc<Vec<&PathBuf>>> = sizes_chunks
+        .par_iter()
+        .flat_map(|&chunk| {
+            let mut chunk_outputs = Vec::<Arc<Vec<&PathBuf>>>::new();
+            let mut data = Vec::<&PathBuf>::new();
+
+            let mut size_counter: u64 = 0;
+            chunk.iter().for_each(|&sp| {
+                let size = sp.1;
+                if size_counter + size > max_input_bytes {
+                    println!("creating input chunk:  {} bytes", size_counter);
+                    chunk_outputs.push(Arc::new(data));
+                    data = Vec::<&PathBuf>::new();
+                    size_counter = 0;
+                }
+                
+                size_counter += size;
+                data.push(sp.0);
+            });
+
+            chunk_outputs
+        })
+        .collect();
+
+
+    let dir_path = get_blocks_dir();
+    input_path_chunks.par_iter().for_each(|chunk| {
+        let slot_data: Vec<SlotData> = chunk.into_iter()
+        .filter_map(|name| {
+            let full_path = dir_path.join(name);
+            match load_block_json(full_path) {
+                Some(ecb) => {
+                    let as_str = name.as_os_str().to_str()?;
+                    match parse_slot_num(as_str) {
+                        Some(num) => Some((num, ecb)),
+                        None => None,
+                    }
+                },
+                None => None,
+            }
+        })
+        .collect(); 
+    
+        write_blocks_json_chunk(&slot_data);
+    });
+}
+
+fn get_blocks_dir<'a>() -> &'a Path {
+    let mut dir_str = BLOCKS_DIR.to_owned();
+    dir_str.push_str("/");
+    Path::new(BLOCKS_DIR)
+}
 
 pub(crate) fn chunk_existing_blocks(chunk_len: usize) {
     println!("\ncopy existing single block files to {} block chunks...\n", chunk_len);
