@@ -1,7 +1,5 @@
-use core::sync;
-use std::{fs::{self, ReadDir, File}, path::{Path, PathBuf}, string::String, borrow::Borrow, time::{Duration, Instant}, io, cell::Ref, sync::Arc};
+use std::{fs::{self, ReadDir, File}, path::{Path, PathBuf}, string::String, time::{Duration, Instant}, io};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use serde::{de, Deserialize};
 use solana_transaction_status::EncodedConfirmedBlock;
 use serde_json;
 
@@ -95,22 +93,6 @@ pub fn write_json_encoded_block(slot: u64, block: &EncodedConfirmedBlock) {
         Err(e) => eprintln!("{}", e),
     }
 }
-
-/*
-pub fn load_blocks_generic<'a, P: AsRef<Path>, T: Deserialize<'a>>(path: P) -> Option<T> {
-    let data = fs::read(path).unwrap_or(vec![]);
-    let res: Option<T> = parse_blocks_gen(&data);
-    res
-}
-
-pub fn parse_blocks_gen<'a, T: Deserialize<'a>>(buffer: &'a Vec<u8>) -> Option<T> {
-    let b: &'a Vec<u8> = buffer;
-    match serde_json::from_slice::<'a, T>(b) {
-        Ok(block) => Some(block),
-        Err(e) => log_err_none(e)
-    }
-}
-*/
 
 pub fn load_block_json<P: AsRef<Path>>(path: P) -> Option<EncodedConfirmedBlock> {
     match fs::read(&path) {
@@ -332,7 +314,6 @@ pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
     
     println!("got vec<vec<PathBuf>> of input paths, len:  {}", input_path_chunks.len());
 
-    //let dir_path = get_blocks_dir();
     input_path_chunks.par_iter().for_each(|chunk| {
         let slot_data: Vec<SlotData> = chunk.iter()
         .filter_map(|&path| {
@@ -349,9 +330,6 @@ pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
         })
         .collect(); 
 
-        //let f = slot_data.first().unwrap();
-        //let l = slot_data.last().unwrap();
-        //println!("chunk write:  {} - {}", f.0, l.0);
         write_blocks_json_chunk(&slot_data);
     });
     println!("done running:  chunk_blocks_by_size()");
@@ -361,49 +339,6 @@ fn get_blocks_dir<'a>() -> &'a Path {
     let mut dir_str = BLOCKS_DIR.to_owned();
     dir_str.push_str("/");
     Path::new(BLOCKS_DIR)
-}
-
-pub(crate) fn chunk_existing_blocks(chunk_len: usize) {
-    println!("\ncopy existing single block files to {} block chunks...\n", chunk_len);
-
-    let start_time = Instant::now();
-    let src_names = dir_file_names(fs::read_dir(BLOCKS_DIR).unwrap());
-    let chunks: Vec<&[PathBuf]> = src_names.chunks(chunk_len).collect();
-
-    let mut dir_str = BLOCKS_DIR.to_owned();
-    dir_str.push_str("/");
-    let dir_path = Path::new(BLOCKS_DIR);
-
-    chunks.par_iter().for_each(|&chunk| {
-        let c_path_str = &chunk_path_from_inputs(&chunk);
-        let chunk_out_path = Path::new(c_path_str);
-        if Path::exists(chunk_out_path) { 
-            println!("skipping pre-existing chunk:  {}", chunk_out_path.to_string_lossy());
-            return 
-        }
-
-        let slot_data: Vec<SlotData> = chunk.into_iter()
-            .filter_map(|name| {
-                let full_path = dir_path.join(name);
-                match load_block_json(full_path) {
-                    Some(ecb) => {
-                        let as_str = name.as_os_str().to_str()?;
-                        match parse_slot_num(as_str) {
-                            Some(num) => Some((num, ecb)),
-                            None => None,
-                        }
-                    },
-                    None => None,
-                }
-            })
-            .collect(); 
-
-        write_blocks_json_chunk(&slot_data);
-    });
-
-    let end_time = Instant::now();
-    let elapsed: Duration = end_time - start_time;
-    println!("\nfinished writing {} chunks of blocks, time:  {}ms\n", chunks.len(), elapsed.as_millis());
 }
 
 
