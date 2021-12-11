@@ -33,21 +33,6 @@ pub fn dir_file_paths(rd: ReadDir) -> Vec<PathBuf> {
     .collect()
 }
 
-fn dir_file_names(rd: ReadDir) -> Vec<PathBuf> {
-    rd.map(|entry_res| {
-        match entry_res {
-            Ok(entry) => {
-                Some(entry.file_name())
-            },
-            Err(e) => log_err_none(&e) 
-        }
-    })
-    .map(|o| {
-        PathBuf::from(o.unwrap())
-    })
-    .collect()
-}
-
 pub fn load_blocks_json_par<P: AsRef<Path>>(dir: P) -> Vec<EncodedConfirmedBlock> {
     let rd = fs::read_dir(dir).unwrap();
     let file_paths = dir_file_paths(rd);
@@ -165,17 +150,6 @@ pub(crate) fn chunk_name(chunk: &Vec<SlotData>) -> String {
     chunk_json_name(first, last)
 }
 
-pub(crate) fn chunk_path_from_inputs(chunk: &[PathBuf]) -> String {
-    let f_path: &PathBuf = chunk.first().unwrap();
-    let first = slot_num_from_path(f_path).unwrap();
-    let l_path: &PathBuf = chunk.last().unwrap();
-    let last = slot_num_from_path(l_path).unwrap();
-
-    let file_name = chunk_json_name(first, last);
-
-    format!("{}/{}",CHUNKED_BLOCKS_DIR, &file_name).to_string()
-}
-
 pub(crate) fn write_blocks_json_chunk(chunk: &Vec<SlotData>) {
     let file_name = chunk_name(chunk);
 
@@ -242,14 +216,13 @@ fn parse_slot_num(slot_file_name: &str) -> Option<u64> {
     let mut dot_split = num_with_extension.split(".");
     let num_str: &str = dot_split.next()?;
 
-    //println!("parsing file: {},  number:  {}", slot_file_name, num_str);
     match num_str.parse::<u64>() {
         Ok(n) => Some(n),
         Err(e) => { log_err(&e); None }
     }
 }
 
-fn slot_num_from_path(slot_path: &PathBuf) -> Option<u64> {
+pub(crate) fn slot_num_from_path(slot_path: &PathBuf) -> Option<u64> {
     match slot_path.as_os_str().to_str() {
         Some(p) => parse_slot_num(p),
         None => None,
@@ -314,8 +287,7 @@ pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
         .filter_map(|&path| {
             match load_block_json(path) {
                 Some(ecb) => {
-                    let as_str = path.as_os_str().to_str()?;
-                    match parse_slot_num(as_str) {
+                    match slot_num_from_path(path) {
                         Some(num) => Some((num, ecb)),
                         None => None,
                     }
