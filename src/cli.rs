@@ -16,7 +16,7 @@ pub(crate) static TASK_NAMES: [&str; 6] = [
 ];
 
 pub(crate) struct CliArguments {
-    pub task: String,
+    pub task: String,                       // non-Option because it's required
     pub minutes: Option<u64>,
     pub rpc: Option<String>,
     pub chunk_size: Option<usize>,
