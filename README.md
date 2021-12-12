@@ -45,7 +45,7 @@ Use one of these names as the `--task` / `-t` arg to run it.
 
     >Must run this before data is available for other tasks.
 
-    Accepts 2 arguments:
+    #### Arguments:
     * `--minutes` / `-m`
         
         How long to scrape blocks for, in minutes.
@@ -59,11 +59,11 @@ Use one of these names as the `--task` / `-t` arg to run it.
         URL of the RPC node to use for requests.
         
         ###### Examples
-        * fetch from mainnet for 2 hours.
+        * ##### fetch from mainnet for 2 hours.
             ```
             sol-data -t scrape_blocks -m 120 --rpc https://api.mainnet-beta.solana.com
             ```
-        * fetch from testnet for 30 minutes
+        * ##### fetch from testnet for 30 minutes
             ```
             sol-data -t scrape_blocks -m 30 --rpc https://api.testnet.solana.com
             ```
@@ -76,15 +76,13 @@ Use one of these names as the `--task` / `-t` arg to run it.
 
         * '_main_' for mainnet-beta
 
-
-        using
-        ```
-        --rpc main
-        ```
-        is the same as
-        ```
-        --rpc https://api.mainnet-beta.solana.com
-        ```
+            ```
+            --rpc main
+            ```
+            is the same as
+            ```
+            --rpc https://api.mainnet-beta.solana.com
+            ```
 
 * ### **chunk_blocks**
     Take a directory of many single-block _.json_ files, and group them into larger 'chunk' files.
@@ -93,14 +91,14 @@ Use one of these names as the `--task` / `-t` arg to run it.
 
     >Requires _.json_ files from **`scrape_blocks`** task to be in _`blocks/json/`_
 
-    Accepts 1 argument:
+    #### Arguments:
     * `--chunk_mb`
         
         The max size of the input data (in megabytes) grouped into 1 output chunk / file.
 
 
     ###### Example
-    Create ~2MB, then ~8MB chunk files.
+    ##### Create ~2MB, then ~8MB chunk files.
     ```
     sol-data -t chunk_blocks --chunk_mb 2;
     sol-data -t chunk_blocks --chunk_mb 8;
@@ -111,7 +109,6 @@ Use one of these names as the `--task` / `-t` arg to run it.
     Outputs the key counts to a file, _`blocks/key_tx_count_*.json`_
 
     >Requires _.json_ files output from the **`chunk_blocks`** task to be in _`blocks/json_chunked`_
-    ###### Example
     ```
     sol-data -t count_txs
     ```
@@ -119,7 +116,6 @@ Use one of these names as the `--task` / `-t` arg to run it.
     Calculate the average size of downloaded Solana blocks' .json files.
     
     >Requires _.json_ files from **`scrape_blocks`** task to be in _`blocks/json/`_
-    ###### Example
     ```
     sol-data -t mean_fsize
     ```
@@ -127,8 +123,6 @@ Use one of these names as the `--task` / `-t` arg to run it.
     Run performance test, looking at the effect of file size on loading & processing many chunks of blocks.
     
     >Requires folders of differently-chunked _.json_ files, from **`chunk_blocks`** task runs, to be in _`blocks/json/sized`_
-
-    ###### Example
     ```
     sol-data -t cmp_block_loads
     ```
@@ -136,8 +130,6 @@ Use one of these names as the `--task` / `-t` arg to run it.
     Copy a sample (1/50 files) of _`blocks/json/*.json`_ data to _`blocks/json_sample`_.
 
     >Requires _.json_ files from **`scrape_blocks`** task to be in _`blocks/json/`_
-
-    ###### Example
     ```
     sol-data -t block_sample
     ```
