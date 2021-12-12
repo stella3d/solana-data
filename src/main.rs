@@ -2,6 +2,7 @@ use crate::{
     cli::*,
     util::println_each_indent,
     scrape::scrape_with_args, 
+    constants::MEGABYTE,
     files::{
         BLOCKS_DIR,  CHUNKED_BLOCKS_DIR, 
         timed_copy_sample, test_size_average, test_block_loads, 
@@ -22,24 +23,12 @@ fn main() {
     let cli_args = get_cli_args();
     
     match cli_args.task.as_str() {
-        // TODO - make network/rpc part of cli for this command
-        SCRAPE_BLOCKS_TASK => {
-            scrape_with_args(&cli_args);
-            /*
-            let mins = cli_args.minutes.unwrap_or(60);
-            let duration = minutes_duration(mins);
-
-            let rpc = cli_args.rpc.unwrap_or("ERROR".to_string());
-            println!("\nscraping blocks for {} minutes, from RPC node:  {}\n", mins, rpc);
-
-            thread::sleep(Duration::from_secs(6000));
-            scrape::scrape_loop(duration, &rpc);
-            */
-        },
+        SCRAPE_BLOCKS_TASK =>
+            scrape_with_args(&cli_args),
         // TODO - make chunk size part of cli for this command?
         CHUNK_BLOCKS_TASK =>
             // 2mb chunks tested by far the fastest to process on my machine
-            test_chunk_by_size(constants::TWO_MEGABYTES),
+            test_chunk_by_size(MEGABYTE * cli_args.chunk_size.unwrap_or(2) as u64),
         COUNT_KEY_TXS_TASK => 
             test_block_loads(CHUNKED_BLOCKS_DIR),
         MEAN_FILE_SIZE_TASK => 
