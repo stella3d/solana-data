@@ -33,7 +33,7 @@ The task argument is `--task` / `-t`
 ```
 sol-data -t <task-name>
 ```
-#  
+
 ### _Supported Tasks_
 
 Use one of these names as the `--task` / `-t` arg to run it.
