@@ -57,12 +57,9 @@ pub(crate) fn scrape_blocks(previous_state: ScrapeState, rpc_url: &str) -> Optio
 }
 
 pub(crate) fn do_scrape(rpc_url: &str) {
-    let prev_state = load_state();
-    println!("\nDO LOOP");
-    println!("\nloaded previous run's state from file:\n{:?}", prev_state);
-
-    match prev_state {
+    match load_state() {
         Ok(s) => {
+            println!("\nloaded previous run's state from file:\n{:?}", s);
             if let Some(new_state) = scrape_blocks(s, rpc_url) {
                 save_state(new_state); 
             };

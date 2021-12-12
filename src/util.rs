@@ -1,5 +1,4 @@
 use std::{time::{Duration, Instant}, fmt::{Debug, Display}};
-use crate::constants::SECS_PER_HOUR;
 
 
 pub fn loop_task<F: Fn() -> ()>(total_time: Duration, loop_fn: F) {
@@ -27,10 +26,6 @@ pub fn time_run<T: FnOnce() -> R, R>(func: T) -> TimedData<R> {
     let start = Instant::now();
     let returned = func();
     TimedData { time: start.elapsed(), data: returned }
-}
-
-pub(crate) fn hours_duration(hours: u64) -> Duration {
-    Duration::from_secs(SECS_PER_HOUR * hours)
 }
 
 pub(crate) fn minutes_duration(minutes: u64) -> Duration {
