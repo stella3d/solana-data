@@ -19,7 +19,8 @@ pub(crate) struct CliArguments {
     pub task: String,
     pub minutes: Option<u64>,
     pub rpc: Option<String>,
-    pub chunk_size: Option<usize>
+    pub chunk_size: Option<usize>,
+    pub sample_rate: Option<usize>
 }
 
 pub(crate) fn get_cli_args() -> CliArguments {
@@ -49,7 +50,11 @@ pub(crate) fn get_cli_args() -> CliArguments {
             .long("chunk_mb")
             .takes_value(true)
             .required_if("task", CHUNK_BLOCKS_TASK)
-            .help("target size (in megabytes) for chunked collections of input data"));
+            .help("target size (in megabytes) for chunked collections of input data"))
+    .arg(Arg::with_name("sample-rate")
+            .long("sample-rate")
+            .takes_value(true)
+            .help("number of source files for each 1 copied to new sample, default: 50"));
 
     let matches = app.get_matches();
 
@@ -57,8 +62,9 @@ pub(crate) fn get_cli_args() -> CliArguments {
     let minutes = parse_minutes(&matches);
     let rpc = parse_rpc(&matches);
     let chunk_size = parse_chunk_size(&matches);
+    let sample_rate = parse_sample_rate(&matches);
 
-    CliArguments { task, minutes, rpc, chunk_size }
+    CliArguments { task, minutes, rpc, chunk_size, sample_rate }
 }
 
 fn parse_task(matches: &ArgMatches) -> String {
@@ -98,6 +104,16 @@ fn parse_chunk_size(matches: &ArgMatches) -> Option<usize> {
             Ok(size) => Some(size),
             Err(e) => { log_err(&e); None }
         }
+    } 
+    else { None }
+}
+
+fn parse_sample_rate(matches: &ArgMatches) -> Option<usize> {
+    if let Some(sr_arg) = matches.value_of("sample-rate") {
+        match sr_arg.parse::<usize>() {
+            Ok(n) => Some(n),
+            Err(e) => log_err_none(&e)
+        } 
     } 
     else { None }
 }

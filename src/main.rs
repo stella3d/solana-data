@@ -1,6 +1,7 @@
 use crate::{
     cli::*,
-    scrape::scrape_with_args, 
+    scrape::scrape_with_args,
+    util::MEGABYTE, 
     files::{
         BLOCKS_DIR,  CHUNKED_BLOCKS_DIR, 
         timed_copy_sample, test_size_average, test_block_loads, 
@@ -25,12 +26,17 @@ fn main() {
         SCRAPE_BLOCKS_TASK =>
             scrape_with_args(&cli_args),
         CHUNK_BLOCKS_TASK => {
-            if let Some(size) = cli_args.chunk_size {
-                test_chunk_by_size(util::MEGABYTE * size as u64)
-            } else {
-                // 2mb chunks tested by far the best on my dev machine 
-                test_chunk_by_size(util::MEGABYTE * 2 as u64)
+            // TODO - move handling of default values to a step between main() and cli arg parsing
+            let mut size = MEGABYTE * 2 as u64;
+            if let Some(s) = cli_args.chunk_size {
+                size = MEGABYTE * s as u64;
             }
+            test_chunk_by_size(size);
+        },
+        BLOCK_SAMPLE_TASK => {
+            let mut rate: usize = 50;       
+            if let Some(sr) = cli_args.sample_rate { rate = sr; }
+            timed_copy_sample(BLOCKS_DIR, rate);
         },
         COUNT_KEY_TXS_TASK => 
             test_block_loads(CHUNKED_BLOCKS_DIR),
@@ -38,9 +44,6 @@ fn main() {
             test_size_average(BLOCKS_DIR),
         COMPARE_BLOCK_LOADS_TASK => 
             load_perf_by_size("blocks/sized"),
-        // TODO - take sample rate as arg, maybe src directory
-        BLOCK_SAMPLE_TASK => 
-            timed_copy_sample(BLOCKS_DIR, 50),
         _ => {}
     }
 }
