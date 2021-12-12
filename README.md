@@ -79,11 +79,11 @@ Use one of these names as the `--task` / `-t` arg to run it.
 
         using
         ```
-        sol-data -t scrape_blocks -m 120 --rpc main
+        --rpc main
         ```
         is the same as
         ```
-        sol-data -t scrape_blocks -m 120 --rpc https://api.mainnet-beta.solana.com
+        --rpc https://api.mainnet-beta.solana.com
         ```
 
 * ### **chunk_blocks**
