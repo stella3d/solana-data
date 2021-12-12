@@ -43,10 +43,10 @@ Supply one of these names to `--task` / `-t` to run.
 
 * ### **scrape_blocks**
     Repeatedly fetch detailed recent block data from a Solana RPC node.
+    
+    Saves blocks as files, in _`blocks/json/slot_*.json`_
 
     >Must run this before data is available for other tasks.
-
-    Saves blocks as files, in _`blocks/json/slot_*.json`_
 
     Accepts 1 argument:
     * `--minutes` / `-m`
@@ -57,7 +57,6 @@ Supply one of these names to `--task` / `-t` to run.
         ```
         sol-data -t scrape_blocks -m 60
         ```
-        
 * ### **chunk_blocks**
     Take a batch of single-block .json files and group them into larger files.
 
