@@ -1,5 +1,5 @@
 use crate::{
-    cli::*,
+    cli::*, tasks::*,
     scrape::scrape_with_args,
     util::MEGABYTE, 
     files::{
