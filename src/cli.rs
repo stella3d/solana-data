@@ -34,7 +34,7 @@ pub(crate) fn get_cli_args() -> CliArguments {
              .short("m")
              .long("minutes")
              .takes_value(true)
-             .required_if("task", COMPARE_BLOCK_LOADS_TASK)
+             .required_if("task", SCRAPE_BLOCKS_TASK)
              .help("How long to run the task, in minutes"));
 
     let matches = app.get_matches();
