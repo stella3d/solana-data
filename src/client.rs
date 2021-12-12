@@ -5,51 +5,9 @@ use solana_program::{pubkey::Pubkey, clock::Slot};
 use solana_sdk::{transaction::Transaction, account::Account};
 use solana_transaction_status::{EncodedTransactionWithStatusMeta, UiTransactionEncoding, EncodedConfirmedBlock};
 
-use crate::{files::{slot_json_path}, util::{dbg_println_each_indent}};
+use crate::{files::{slot_json_path}, networks::DEVNET_RPC};
 
-#[derive(Hash, Eq, Debug)]
-pub enum SolNetworkName { Dev, Test, Main }
 
-impl PartialEq for SolNetworkName {
-    fn eq(&self, other: &Self) -> bool {
-        match other {
-            SolNetworkName::Dev => self == &SolNetworkName::Dev,
-            SolNetworkName::Test => self == &SolNetworkName::Test,
-            SolNetworkName::Main => self == &SolNetworkName::Main,
-        }
-    }
-}
-
-pub const DEVNET_RPC: &str = "https://api.devnet.solana.com";
-pub const TESTNET_RPC: &str = "https://api.testnet.solana.com";
-pub const MAINNET_RPC: &str = "https://api.mainnet-beta.solana.com";
-
-pub const DEFAULT_NET_RPCS: [(&str, &str); 3] = [
-    ("dev", DEVNET_RPC),
-    ("test", TESTNET_RPC),
-    ("main", MAINNET_RPC),
-];
-
-// allow using short special names for default RPC node on each Solana network
-pub(crate) fn check_special_rpc_values(rpc_input: &str) -> Option<String> {
-    let lowercase_input = rpc_input.to_lowercase();
-    match lowercase_input.as_str() {  
-        "dev" => Some(DEVNET_RPC.to_string()),
-        "test" => Some(TESTNET_RPC.to_string()),
-        "main" => Some(MAINNET_RPC.to_string()),
-        lc_in => {
-            if !lc_in.starts_with("https://") { 
-                println!("\nthe following keywords (on left) are aliases for default public RPC nodes");
-                dbg_println_each_indent(&DEFAULT_NET_RPCS, true);
-                println!("these keywords can be used as the --rpc argument, in place of a URL\n");
-                return None 
-            }
-            Some(rpc_input.to_string())
-        }
-    }
-}
-
-const DEFAULT_TMP_CAPACITY: usize = 256;
 
 #[derive(Clone)]
 pub struct ClientWrapper {
@@ -166,10 +124,12 @@ impl ClientWrapper {
     }
 }
 
+const DEFAULT_TMP_CAPACITY: usize = 256;
+
 pub fn get_client (rpc_url: &str) -> ClientWrapper {
-    let mut rpc = rpc_url;
+    let mut rpc: &str = rpc_url;
     if rpc_url.is_empty() {
-        rpc = DEVNET_RPC;
+        rpc = DEVNET_RPC.clone();
     }
 
     ClientWrapper { 

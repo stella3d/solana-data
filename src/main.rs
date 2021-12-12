@@ -16,6 +16,7 @@ pub mod scrape;
 pub mod util;
 pub mod cli;
 pub mod test_tasks;
+pub mod networks;
  
 fn main() {
     let cli_args = get_cli_args();

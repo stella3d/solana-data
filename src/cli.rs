@@ -1,6 +1,6 @@
 use clap::{self, Arg, App, ArgMatches};
 
-use crate::{util::{log_err}, client::check_special_rpc_values};
+use crate::{util::{log_err, log_err_none}, networks::expand_rpc_keywords};
 
 
 pub(crate) const CHUNK_BLOCKS_TASK: &str = "chunk_blocks";
@@ -62,33 +62,28 @@ pub(crate) fn get_cli_args() -> CliArguments {
 }
 
 fn parse_minutes(matches: &ArgMatches) -> Option<u64> {
-    let raw_minutes = matches.value_of("minutes").unwrap_or("").to_owned();
-    if raw_minutes.is_empty() { 
-        return None 
+    if let Some(minutes_arg) = matches.value_of("minutes") {
+        return match minutes_arg.parse::<u64>() {
+            Ok(m) => Some(m),
+            Err(e) => log_err_none(&e)
+        }
     }
-    match raw_minutes.parse::<u64>() {
-        Ok(m) => Some(m),
-        Err(e) => { log_err(&e); None }
-    }
+    else { None }
 }
 
 fn parse_rpc(matches: &ArgMatches) -> Option<String> {
-    match matches.value_of("rpc") {
-        Some(rpc_arg) => {
-            check_special_rpc_values(&rpc_arg)
-        },
-        None => None,
-    }
+    if let Some(rpc_arg) = matches.value_of("rpc") {
+        Some(expand_rpc_keywords(&rpc_arg).to_string())
+    } 
+    else { None }
 }
 
 fn parse_chunk_size(matches: &ArgMatches) -> Option<usize> {
-    match matches.value_of("chunk_mb") {
-        Some(size_str) => {
-            match size_str.parse::<usize>() {
-                Ok(size) => Some(size),
-                Err(e) => { log_err(&e); None }
-            }
-        },
-        None => None
-    }
+    if let Some(mb_arg) = matches.value_of("chunk_mb") {
+        match mb_arg.parse::<usize>() {
+            Ok(size) => Some(size),
+            Err(e) => { log_err(&e); None }
+        }
+    } 
+    else { None }
 }
