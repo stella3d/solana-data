@@ -59,11 +59,11 @@ Use one of these names as the `--task` / `-t` arg to run it.
         URL of the RPC node to use for requests.
         
         ###### Examples
-        * ##### fetch from mainnet for 2 hours.
+        * fetch from mainnet for 2 hours.
             ```
             sol-data -t scrape_blocks -m 120 --rpc https://api.mainnet-beta.solana.com
             ```
-        * ##### fetch from testnet for 30 minutes
+        * fetch from testnet for 30 minutes
             ```
             sol-data -t scrape_blocks -m 30 --rpc https://api.testnet.solana.com
             ```
@@ -98,7 +98,7 @@ Use one of these names as the `--task` / `-t` arg to run it.
 
 
     ###### Example
-    ##### Create ~2MB, then ~8MB chunk files.
+    Create ~2MB, then ~8MB chunk files.
     ```
     sol-data -t chunk_blocks --chunk_mb 2;
     sol-data -t chunk_blocks --chunk_mb 8;
