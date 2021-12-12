@@ -40,3 +40,8 @@ pub(crate) fn println_each_indent<T: Display>(data: &[T], end_newline: bool) {
     data.iter().for_each(|d| println!("    {}", d));
     if end_newline { println!("") }
 }
+
+pub(crate) fn dbg_println_each_indent<T: Debug>(data: &[T], end_newline: bool) {
+    data.iter().for_each(|d| println!("    {:?}", d));
+    if end_newline { println!("") }
+}

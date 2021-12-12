@@ -1,17 +1,53 @@
-use std::{collections::HashSet, sync::Arc, path::Path};
+use std::{collections::{HashSet}, sync::Arc, path::Path};
 
 use solana_client::{self, rpc_client::RpcClient, client_error::{ClientError}};
 use solana_program::{pubkey::Pubkey, clock::Slot};
 use solana_sdk::{transaction::Transaction, account::Account};
 use solana_transaction_status::{EncodedTransactionWithStatusMeta, UiTransactionEncoding, EncodedConfirmedBlock};
 
-use crate::files::{slot_json_path};
+use crate::{files::{slot_json_path}, util::{dbg_println_each_indent}};
 
+#[derive(Hash, Eq, Debug)]
+pub enum SolNetworkName { Dev, Test, Main }
 
-pub static DEVNET_RPC: &str = "https://api.devnet.solana.com";
-pub static TESTNET_RPC: &str = "https://api.testnet.solana.com";
-pub static MAINNET_RPC: &str = "https://api.mainnet-beta.solana.com";
+impl PartialEq for SolNetworkName {
+    fn eq(&self, other: &Self) -> bool {
+        match other {
+            SolNetworkName::Dev => self == &SolNetworkName::Dev,
+            SolNetworkName::Test => self == &SolNetworkName::Test,
+            SolNetworkName::Main => self == &SolNetworkName::Main,
+        }
+    }
+}
 
+pub const DEVNET_RPC: &str = "https://api.devnet.solana.com";
+pub const TESTNET_RPC: &str = "https://api.testnet.solana.com";
+pub const MAINNET_RPC: &str = "https://api.mainnet-beta.solana.com";
+
+pub const DEFAULT_NET_RPCS: [(&str, &str); 3] = [
+    ("dev", DEVNET_RPC),
+    ("test", TESTNET_RPC),
+    ("main", MAINNET_RPC),
+];
+
+// allow using short special names for default RPC node on each Solana network
+pub(crate) fn check_special_rpc_values(rpc_input: &str) -> Option<String> {
+    let lowercase_input = rpc_input.to_lowercase();
+    match lowercase_input.as_str() {  
+        "dev" => Some(DEVNET_RPC.to_string()),
+        "test" => Some(TESTNET_RPC.to_string()),
+        "main" => Some(MAINNET_RPC.to_string()),
+        lc_in => {
+            if !lc_in.starts_with("https://") { 
+                println!("\nthe following keywords (on left) are aliases for default public RPC nodes");
+                dbg_println_each_indent(&DEFAULT_NET_RPCS, true);
+                println!("these keywords can be used as the --rpc argument, in place of a URL\n");
+                return None 
+            }
+            Some(rpc_input.to_string())
+        }
+    }
+}
 
 const DEFAULT_TMP_CAPACITY: usize = 256;
 

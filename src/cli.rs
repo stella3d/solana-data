@@ -1,6 +1,6 @@
 use clap::{self, Arg, App, ArgMatches};
 
-use crate::util::log_err;
+use crate::{util::log_err, client::check_special_rpc_values};
 
 
 pub(crate) const CHUNK_BLOCKS_TASK: &str = "chunk_blocks";
@@ -17,7 +17,8 @@ pub(crate) static TASK_NAMES: [&str; 6] = [
 
 pub(crate) struct CliArguments {
     pub task: String,
-    pub minutes: Option<u64>
+    pub minutes: Option<u64>,
+    pub rpc: Option<String>
 }
 
 pub(crate) fn get_cli_args() -> CliArguments {
@@ -35,13 +36,21 @@ pub(crate) fn get_cli_args() -> CliArguments {
              .long("minutes")
              .takes_value(true)
              .required_if("task", SCRAPE_BLOCKS_TASK)
-             .help("How long to run the task, in minutes"));
+             .help("How long to run the task, in minutes"))
+    .arg(Arg::with_name("rpc")
+             .short("r")
+             .long("rpc")
+             .takes_value(true)
+             .required_if("task", SCRAPE_BLOCKS_TASK)
+             .help("URL of the Solana RPC node to use, or:\n 
+                    one of 'dev','test','main'\nto use the default RPC for that network"));
 
     let matches = app.get_matches();
     let task = matches.value_of("task").unwrap_or("").to_owned();
     let minutes = parse_minutes(&matches);
+    let rpc = parse_rpc(&matches);
 
-    CliArguments { task, minutes }
+    CliArguments { task, minutes, rpc }
 }
 
 fn parse_minutes(matches: &ArgMatches) -> Option<u64> {
@@ -49,5 +58,14 @@ fn parse_minutes(matches: &ArgMatches) -> Option<u64> {
     match raw_minutes.parse::<u64>() {
         Ok(m) => Some(m),
         Err(e) => { log_err(&e); None }
+    }
+}
+
+fn parse_rpc(matches: &ArgMatches) -> Option<String> {
+    match matches.value_of("rpc") {
+        Some(rpc_arg) => {
+            check_special_rpc_values(&rpc_arg)
+        },
+        None => None,
     }
 }

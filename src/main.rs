@@ -1,6 +1,7 @@
 use crate::{
     cli::*,
-    util::{minutes_duration, println_each_indent}, 
+    util::println_each_indent,
+    scrape::scrape_with_args, 
     files::{
         BLOCKS_DIR,  CHUNKED_BLOCKS_DIR, 
         timed_copy_sample, test_size_average, test_block_loads, 
@@ -23,10 +24,17 @@ fn main() {
     match cli_args.task.as_str() {
         // TODO - make network/rpc part of cli for this command
         SCRAPE_BLOCKS_TASK => {
+            scrape_with_args(&cli_args);
+            /*
             let mins = cli_args.minutes.unwrap_or(60);
             let duration = minutes_duration(mins);
-            println!("\nscraping blocks from RPC for {} minutes\n", mins);
-            scrape::scrape_loop(duration, &client::DEVNET_RPC);
+
+            let rpc = cli_args.rpc.unwrap_or("ERROR".to_string());
+            println!("\nscraping blocks for {} minutes, from RPC node:  {}\n", mins, rpc);
+
+            thread::sleep(Duration::from_secs(6000));
+            scrape::scrape_loop(duration, &rpc);
+            */
         },
         // TODO - make chunk size part of cli for this command?
         CHUNK_BLOCKS_TASK =>

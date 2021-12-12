@@ -1,7 +1,7 @@
-use std::{cmp::max, time::Duration, fs};
+use std::{cmp::max, time::Duration, fs, thread};
 use serde::{Serialize, Deserialize};
 
-use crate::{util::{log_err, loop_task}, client::get_client, files};
+use crate::{util::{log_err, loop_task, minutes_duration}, client::get_client, files, cli::CliArguments, scrape};
 
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
@@ -85,4 +85,20 @@ fn load_state() -> Result<ScrapeState, serde_json::Error> {
                             (std::str::from_utf8(&data).unwrap()),
         Err(_) => Ok(ScrapeState { last_slot: 0 }),
     }
+}
+
+pub(crate) fn scrape_with_args(cli_args: &CliArguments) {
+    let mins = cli_args.minutes.unwrap_or(60);
+    let duration = minutes_duration(mins);
+
+    match cli_args.rpc.as_ref() {
+        Some(rpc) => {
+            println!("\nscraping blocks for {} minutes, from RPC node:  {}\n", mins, rpc);
+            thread::sleep(Duration::from_secs(6000));
+            scrape::scrape_loop(duration, &rpc);
+        },
+        None => {
+            eprintln!("\nSolana RPC url required, but not provided\n");
+        },
+    };
 }
