@@ -1,8 +1,7 @@
 use crate::{
     cli::*,
-    util::println_each_indent,
+    util::{println_each_indent, MEGABYTE},
     scrape::scrape_with_args, 
-    constants::MEGABYTE,
     files::{
         BLOCKS_DIR,  CHUNKED_BLOCKS_DIR, 
         timed_copy_sample, test_size_average, test_block_loads, 
@@ -17,7 +16,6 @@ pub mod scrape;
 pub mod util;
 pub mod cli;
 pub mod test_tasks;
-pub mod constants;
  
 fn main() {
     let cli_args = get_cli_args();
@@ -25,10 +23,14 @@ fn main() {
     match cli_args.task.as_str() {
         SCRAPE_BLOCKS_TASK =>
             scrape_with_args(&cli_args),
-        // TODO - make chunk size part of cli for this command?
-        CHUNK_BLOCKS_TASK =>
-            // 2mb chunks tested by far the fastest to process on my machine
-            test_chunk_by_size(MEGABYTE * cli_args.chunk_size.unwrap_or(2) as u64),
+        CHUNK_BLOCKS_TASK => {
+            if let Some(size) = cli_args.chunk_size {
+                test_chunk_by_size(MEGABYTE * size as u64)
+            } else {
+                // 2mb chunks tested by far the best on my dev machine 
+                test_chunk_by_size(MEGABYTE * 2 as u64)
+            }
+        },
         COUNT_KEY_TXS_TASK => 
             test_block_loads(CHUNKED_BLOCKS_DIR),
         MEAN_FILE_SIZE_TASK => 

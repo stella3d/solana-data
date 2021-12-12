@@ -1,6 +1,6 @@
 use clap::{self, Arg, App, ArgMatches};
 
-use crate::{util::log_err, client::check_special_rpc_values};
+use crate::{util::{log_err}, client::check_special_rpc_values};
 
 
 pub(crate) const CHUNK_BLOCKS_TASK: &str = "chunk_blocks";
@@ -44,12 +44,12 @@ pub(crate) fn get_cli_args() -> CliArguments {
              .takes_value(true)
              .required_if("task", SCRAPE_BLOCKS_TASK)
              .help("URL of the Solana RPC node to use, or: one of 'dev','test','main'"))
-    .arg(Arg::with_name("chunk size")
-            .short("cs")
-            .long("chunk-size")
+    .arg(Arg::with_name("chunk_mb")
+            .short("cm")
+            .long("chunk_mb")
             .takes_value(true)
             .required_if("task", CHUNK_BLOCKS_TASK)
-            .help("target size for input data chunks, in megabytes"));
+            .help("target size (in megabytes) for chunked collections of input data"));
 
     let matches = app.get_matches();
     let task = matches.value_of("task").unwrap_or("").to_owned();
@@ -64,6 +64,9 @@ pub(crate) fn get_cli_args() -> CliArguments {
 
 fn parse_minutes(matches: &ArgMatches) -> Option<u64> {
     let raw_minutes = matches.value_of("minutes").unwrap_or("").to_owned();
+    if raw_minutes.is_empty() { 
+        return None 
+    }
     match raw_minutes.parse::<u64>() {
         Ok(m) => Some(m),
         Err(e) => { log_err(&e); None }
@@ -80,10 +83,8 @@ fn parse_rpc(matches: &ArgMatches) -> Option<String> {
 }
 
 fn parse_chunk_size(matches: &ArgMatches) -> Option<usize> {
-    println!("parsing chunk size...");
-    match matches.value_of("chunk-size") {
+    match matches.value_of("chunk_mb") {
         Some(size_str) => {
-            println!("size_str:  {}", size_str);
             match size_str.parse::<usize>() {
                 Ok(size) => Some(size),
                 Err(e) => { log_err(&e); None }

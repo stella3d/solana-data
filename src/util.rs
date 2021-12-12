@@ -1,6 +1,8 @@
 use std::{time::{Duration, Instant}, fmt::{Debug, Display}};
 
 
+pub(crate) const MEGABYTE: u64 = 1024 * 1024;
+
 pub fn loop_task<F: Fn() -> ()>(total_time: Duration, loop_fn: F) {
     let start = Instant::now();
     let end = start + total_time;
