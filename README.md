@@ -13,7 +13,7 @@ in the project, run:
 cargo build --release
 ```
 
-The executable should be output to _`target/release/sol-data`_
+The executable should be output to _**`target/release/sol-data`**_
 
 >on Windows, use `sol-data.exe` instead of `sol-data`
 
