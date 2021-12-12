@@ -45,7 +45,6 @@ pub(crate) fn get_cli_args() -> CliArguments {
              .required_if("task", SCRAPE_BLOCKS_TASK)
              .help("URL of the Solana RPC node to use, or: one of 'dev','test','main'"))
     .arg(Arg::with_name("chunk_mb")
-            .short("cm")
             .long("chunk_mb")
             .takes_value(true)
             .required_if("task", CHUNK_BLOCKS_TASK)
