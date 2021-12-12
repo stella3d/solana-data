@@ -54,6 +54,7 @@ pub(crate) fn get_cli_args() -> CliArguments {
             .help("size (megabytes) for chunked collections of input data, default: 2"))
     .arg(Arg::with_name("sample-rate")
             .long("sample-rate")
+            .aliases(&["sr"])
             .takes_value(true)
             .help("number of source files for each 1 copied to new sample, default: 50"));
 
