@@ -41,9 +41,9 @@ fn main() {
         // TODO - take sample rate as arg, maybe src directory
         BLOCK_SAMPLE_TASK => 
             timed_copy_sample(BLOCKS_DIR, 50),
-        t => { 
-            if t.is_empty() { eprintln!("\n--task / -t argument required!") }
-            else { eprintln!("\ntask argument '{}' not recognized!", t) }
+        task_arg => { 
+            if task_arg.is_empty() { eprintln!("\n--task / -t argument required!") }
+            else { eprintln!("\ntask argument '{}' not recognized!", task_arg) }
             println!("available tasks:");
             println_each_indent(&TASK_NAMES, true); 
         }
