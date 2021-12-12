@@ -11,7 +11,6 @@ use crate::{
 pub mod client; pub mod files; pub mod analyze; pub mod scrape;
 pub mod util; pub mod cli; pub mod test_tasks; pub mod constants;
  
-
 fn main() {
     let cli_args = get_cli_args();
     
