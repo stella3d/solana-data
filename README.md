@@ -37,11 +37,11 @@ where `count_txs` is the task name.
 
 
 #  
-### Supported Tasks
+### _Supported Tasks_
 
-Supply one of these names to `--task` / `-t` to run.
+Supply one of these names to the `--task` / `-t` arg to run.
 
-* ## **scrape_blocks**
+* ### **scrape_blocks**
     Repeatedly fetch detailed recent block data from a Solana RPC node.
     
     Saves blocks as files, in _`blocks/json/slot_*.json`_
@@ -57,38 +57,39 @@ Supply one of these names to `--task` / `-t` to run.
         ```
         sol-data -t scrape_blocks -m 60
         ```
-* ## **chunk_blocks**
+* ### **chunk_blocks**
     Take a batch of single-block .json files and group them into larger files.
 
     >Requires _.json_ files from **`scrape_blocks`** task to be in _`blocks/json/`_
     ```
     sol-data -t chunk_blocks
     ```
-* ## **count_txs**
+* ### **count_txs**
     Count how many times each public key is seen in the given blocks' transactions.
     
     >Requires _.json_ files output from the **`chunk_blocks`** task to be in _`blocks/json_chunked`_
     ```
     sol-data -t count_txs
     ```
-* ## **mean_fsize**
+* ### **mean_fsize**
     Calculate the average size of downloaded Solana blocks' .json files.
     
     >Requires _.json_ files from **`scrape_blocks`** task to be in _`blocks/json/`_
     ```
     sol-data -t mean_fsize
     ```
-* ## **cmp_block_loads**
+* ### **cmp_block_loads**
     Run performance test, looking at the effect of file size on loading & processing many chunks of blocks.
     
     >Requires folders of differently-chunked _.json_ files, from **`chunk_blocks`** task runs, to be in _`blocks/json/sized`_
     ```
     sol-data -t cmp_block_loads
     ```
-* ## **block_sample**
+* ### **block_sample**
     Copy a sample (1/50 files) of _`blocks/json/*.json`_ data to _`blocks/json_sample`_.
 
     >Requires _.json_ files from **`scrape_blocks`** task to be in _`blocks/json/`_
     ```
     sol-data -t block_sample
     ```
+#  
