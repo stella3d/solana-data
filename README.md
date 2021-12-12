@@ -60,6 +60,8 @@ Supply one of these names to the `--task` / `-t` arg to run.
 * ### **chunk_blocks**
     Take a directory of many single-block _.json_ files, and group them into larger 'chunk' files.
 
+    Outputs new files to _`blocks/json_chunked/slots_*.json`_ 
+
     >Requires _.json_ files from **`scrape_blocks`** task to be in _`blocks/json/`_
     ```
     sol-data -t chunk_blocks
@@ -67,6 +69,8 @@ Supply one of these names to the `--task` / `-t` arg to run.
 * ### **count_txs**
     Count how many times each public key is seen in the given blocks' transactions.
     
+    Outputs the key counts to a file, _`blocks/key_tx_count_*.json`_
+
     >Requires _.json_ files output from the **`chunk_blocks`** task to be in _`blocks/json_chunked`_
     ```
     sol-data -t count_txs
