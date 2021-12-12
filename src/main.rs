@@ -1,6 +1,6 @@
 use crate::{
     cli::*,
-    util::{hours_duration, println_each_indent}, 
+    util::{minutes_duration, println_each_indent}, 
     files::{
         BLOCKS_DIR,  CHUNKED_BLOCKS_DIR, 
         timed_copy_sample, test_size_average, test_block_loads, 
@@ -21,12 +21,16 @@ fn main() {
     let cli_args = get_cli_args();
     
     match cli_args.task.as_str() {
-        SCRAPE_BLOCKS_TASK =>
-            // TODO - make network and duration (in minutes) part of cli for this command
-            scrape::scrape_loop(hours_duration(12), &client::DEVNET_RPC),
+        // TODO - make network/rpc part of cli for this command
+        SCRAPE_BLOCKS_TASK => {
+            let mins = cli_args.minutes.unwrap_or(60);
+            let duration = minutes_duration(mins);
+            println!("\nscraping blocks from RPC for {} minutes\n", mins);
+            scrape::scrape_loop(duration, &client::DEVNET_RPC);
+        },
+        // TODO - make chunk size part of cli for this command?
         CHUNK_BLOCKS_TASK =>
-            // TODO - make chunk size part of cli for this command?
-            // 2 megabyte chunks tested as by far the fastest to process on my machine
+            // 2mb chunks tested by far the fastest to process on my machine
             test_chunk_by_size(constants::TWO_MEGABYTES),
         COUNT_KEY_TXS_TASK => 
             test_block_loads(CHUNKED_BLOCKS_DIR),
@@ -34,8 +38,8 @@ fn main() {
             test_size_average(BLOCKS_DIR),
         COMPARE_BLOCK_LOADS_TASK => 
             load_perf_by_size("blocks/sized"),
+        // TODO - take sample rate as arg, maybe src directory
         BLOCK_SAMPLE_TASK => 
-            // TODO - take sample rate as arg, maybe src directory
             timed_copy_sample(BLOCKS_DIR, 50),
         t => { 
             if t.is_empty() { eprintln!("\n--task / -t argument required!") }

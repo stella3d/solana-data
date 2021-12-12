@@ -1,4 +1,6 @@
-use clap::{self, Arg, App};
+use clap::{self, Arg, App, ArgMatches};
+
+use crate::util::log_err;
 
 
 pub(crate) const CHUNK_BLOCKS_TASK: &str = "chunk_blocks";
@@ -15,6 +17,7 @@ pub(crate) static TASK_NAMES: [&str; 6] = [
 
 pub(crate) struct CliArguments {
     pub task: String,
+    pub minutes: Option<u64>
 }
 
 pub(crate) fn get_cli_args() -> CliArguments {
@@ -26,10 +29,25 @@ pub(crate) fn get_cli_args() -> CliArguments {
              .short("t")
              .long("task")
              .takes_value(true)
-             .help("Which sub-command to run"));
+             .help("Which sub-command to run"))
+    .arg(Arg::with_name("minutes")
+             .short("m")
+             .long("minutes")
+             .takes_value(true)
+             .required_if("task", COMPARE_BLOCK_LOADS_TASK)
+             .help("How long to run the task, in minutes"));
 
     let matches = app.get_matches();
-    let task = matches.value_of("task").unwrap_or("").clone().to_owned();
+    let task = matches.value_of("task").unwrap_or("").to_owned();
+    let minutes = parse_minutes(&matches);
 
-    CliArguments { task }
+    CliArguments { task, minutes }
+}
+
+fn parse_minutes(matches: &ArgMatches) -> Option<u64> {
+    let raw_minutes = matches.value_of("minutes").unwrap_or("").to_owned();
+    match raw_minutes.parse::<u64>() {
+        Ok(m) => Some(m),
+        Err(e) => { log_err(&e); None }
+    }
 }

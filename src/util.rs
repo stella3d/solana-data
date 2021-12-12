@@ -33,6 +33,10 @@ pub(crate) fn hours_duration(hours: u64) -> Duration {
     Duration::from_secs(SECS_PER_HOUR * hours)
 }
 
+pub(crate) fn minutes_duration(minutes: u64) -> Duration {
+    Duration::from_secs(60 * minutes)
+}
+
 pub fn log_err<E: Debug + Display>(e: &E) { eprintln!("{}", e); }
 
 pub fn log_err_none<T, E: Debug + Display>(e: E) -> Option<T> { eprintln!("{}", e); None }
