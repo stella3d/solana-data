@@ -24,7 +24,7 @@ Help text can be printed with `--help` / `-h`
 ```
 sol-data --help
 ```
-#  
+
 ## **Tasks**
 All top-level functionality is in a named ___task___.
 
