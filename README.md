@@ -92,7 +92,7 @@ Use one of these names as the `--task` / `-t` arg to run it.
     >Requires _.json_ files from **`scrape_blocks`** task to be in _`blocks/json/`_
 
     #### Arguments:
-    * `--chunk_mb`
+    * `--chunk-mb`
         
         The max size of the input data (in megabytes) grouped into 1 output chunk / file.
 
@@ -100,8 +100,8 @@ Use one of these names as the `--task` / `-t` arg to run it.
     ###### Example
     Create ~2MB, then ~8MB chunk files.
     ```
-    sol-data -t chunk_blocks --chunk_mb 2;
-    sol-data -t chunk_blocks --chunk_mb 8;
+    sol-data -t chunk_blocks --chunk-mb 2;
+    sol-data -t chunk_blocks --chunk-mb 8;
     ```
 * ### **count_txs**
     Count how many times each public key is seen in the given blocks' transactions.

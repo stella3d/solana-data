@@ -46,8 +46,9 @@ pub(crate) fn get_cli_args() -> CliArguments {
              .takes_value(true)
              .required_if("task", SCRAPE_BLOCKS_TASK)
              .help("URL of the Solana RPC node to use, or: 1 of 'dev','test','main'"))
-    .arg(Arg::with_name("chunk_mb")
-            .long("chunk_mb")
+    .arg(Arg::with_name("chunk-mb")
+            .long("chunk-mb")
+            .aliases(&["cmb"])
             .takes_value(true)
             .required_if("task", CHUNK_BLOCKS_TASK)
             .help("size (megabytes) for chunked collections of input data, default: 2"))
@@ -99,7 +100,7 @@ fn parse_rpc(matches: &ArgMatches) -> Option<String> {
 }
 
 fn parse_chunk_size(matches: &ArgMatches) -> Option<usize> {
-    if let Some(mb_arg) = matches.value_of("chunk_mb") {
+    if let Some(mb_arg) = matches.value_of("chunk-mb") {
         match mb_arg.parse::<usize>() {
             Ok(size) => Some(size),
             Err(e) => { log_err(&e); None }
