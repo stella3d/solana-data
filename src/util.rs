@@ -26,7 +26,7 @@ pub fn timer<T: FnOnce() -> ()>(func: T) -> Duration {
 pub fn time_run<T: FnOnce() -> R, R>(func: T) -> TimedData<R> {
     let start = Instant::now();
     let returned = func();
-    return TimedData { time: start.elapsed(), data: returned }
+    TimedData { time: start.elapsed(), data: returned }
 }
 
 pub(crate) fn hours_duration(hours: u64) -> Duration {
