@@ -3,13 +3,26 @@ toy CLI tool for accessing and analyzing Solana blockchain data
 
 # **Usage**
 
+
+
 ## **Building**
 
 in the project, run: 
 
-`cargo build --release`
+```
+cargo build --release
+```
 
-Help text can be accessed at the command line
+The executable should be output to _`target/release/sol-data`_
+
+>on Windows, use `sol-data.exe` instead of `sol-data`
+
+## **Help**
+
+after building, help text can be printed with `--help` / `-h`:
+```
+sol-data --help
+```
 
 ## **Tasks**
 All top-level functionality is in a named ___task___.
@@ -22,46 +35,61 @@ sol-data -t count_txs
 
 where `count_txs` is the task name.
 
->on Windows, use `sol-data.exe` instead of `sol-data`
+
 #  
 ### Supported Tasks
 
-Supply one of these names exactly to `--task` / `-t`
+Supply one of these names to `--task` / `-t` to run.
 
 * ### **scrape_blocks**
-    Must run this (or restore from archive) before data is available for other tasks.
+    Repeatedly fetch detailed recent block data from a Solana RPC node.
 
-    Repeatedly fetch recent block data from a Solana RPC node, and save as .json files in '_blocks/json_'
+    >Must run this before data is available for other tasks.
 
-    Accepts an argument `--minutes` / `-m` specifying how long to scrape blocks for, in minutes.
+    Saves blocks as files, in _`blocks/json/slot_*.json`_
 
-    This would run for 2 hours:
-    
-    ```
-    sol-data -t scrape_blocks -m 120
-    ```
+    Accepts 1 argument:
+    * `--minutes` / `-m`
+        
+        How long to scrape blocks for, in minutes.
+
+        This would run for an hour:
+        ```
+        sol-data -t scrape_blocks -m 60
+        ```
+        
 * ### **chunk_blocks**
+    Take a batch of single-block .json files and group them into larger files.
 
-    Take a batch of single-block files and group them into larger files.
-    
-    `sol-data -t chunk_blocks`
+    >Requires _.json_ files from **`scrape_blocks`** task to be in _`blocks/json/`_
+    ```
+    sol-data -t chunk_blocks
+    ```
 * ### **count_txs**
-
-    Count how many times each public key is involved in a transaction, within the given blocks.
-
-    `sol-data -t count_txs`
-* ### **mean_fsize**
-
-    Calculate the average size of downloaded Solana block .json files in '_blocks/json_'.
+    Count how many times each public key is seen in the given blocks' transactions.
     
-    `sol-data -t mean_fsize`
+    >Requires _.json_ files output from the **`chunk_blocks`** task to be in _`blocks/json_chunked`_
+    ```
+    sol-data -t count_txs
+    ```
+* ### **mean_fsize**
+    Calculate the average size of downloaded Solana blocks' .json files.
+    
+    >Requires _.json_ files from **`scrape_blocks`** task to be in _`blocks/json/`_
+    ```
+    sol-data -t mean_fsize
+    ```
 * ### **cmp_block_loads**
-
-    Run performance test for effect of file size on loading & processing many chunks of saved blocks.
-
-    `sol-data -t cmp_block_loads`
+    Run performance test, looking at the effect of file size on loading & processing many chunks of blocks.
+    
+    >Requires folders of differently-chunked _.json_ files, from **`chunk_blocks`** task runs, to be in _`blocks/json/sized`_
+    ```
+    sol-data -t cmp_block_loads
+    ```
 * ### **block_sample**
+    Copy a sample (1/50 files) of _`blocks/json/*.json`_ data to _`blocks/json_sample`_.
 
-    Copy a small sample of the base 'blocks/json' data set to 'blocks/json_sample'.
-
-    `sol-data -t block_sample`
+    >Requires _.json_ files from **`scrape_blocks`** task to be in _`blocks/json/`_
+    ```
+    sol-data -t block_sample
+    ```
