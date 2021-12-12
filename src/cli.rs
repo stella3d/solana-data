@@ -1,6 +1,6 @@
 use clap::{self, Arg, App, ArgMatches};
 
-use crate::{util::{log_err, log_err_none}, networks::expand_rpc_keywords};
+use crate::{util::{log_err, log_err_none, println_each_indent}, networks::expand_rpc_keywords};
 
 
 pub(crate) const CHUNK_BLOCKS_TASK: &str = "chunk_blocks";
@@ -28,19 +28,20 @@ pub(crate) fn get_cli_args() -> CliArguments {
     .author("by: stellz")
     .about("solana data toys: rpc scraping & analysis")
     .arg(Arg::with_name("task")
-             .short("t")
              .long("task")
+             .short("t")
              .takes_value(true)
+             .required(true)
              .help("Which sub-command to run"))
     .arg(Arg::with_name("minutes")
-             .short("m")
              .long("minutes")
+             .short("m")
              .takes_value(true)
              .required_if("task", SCRAPE_BLOCKS_TASK)
              .help("How long to run the task, in minutes"))
     .arg(Arg::with_name("rpc")
-             .short("r")
              .long("rpc")
+             .short("r")
              .takes_value(true)
              .required_if("task", SCRAPE_BLOCKS_TASK)
              .help("URL of the Solana RPC node to use, or: one of 'dev','test','main'"))
@@ -51,14 +52,27 @@ pub(crate) fn get_cli_args() -> CliArguments {
             .help("target size (in megabytes) for chunked collections of input data"));
 
     let matches = app.get_matches();
-    let task = matches.value_of("task").unwrap_or("").to_owned();
 
+    let task = parse_task(&matches);
     let minutes = parse_minutes(&matches);
     let rpc = parse_rpc(&matches);
     let chunk_size = parse_chunk_size(&matches);
-    println!("\nparsed chunk size argument:  {}\n", chunk_size.unwrap_or(0));
 
     CliArguments { task, minutes, rpc, chunk_size }
+}
+
+fn parse_task(matches: &ArgMatches) -> String {
+    match matches.value_of("task") {
+        Some(task_arg) => { 
+            if !TASK_NAMES.contains(&task_arg) { 
+                eprintln!("\ntask '{}' not recognized!", task_arg);
+                println!("available tasks:");
+                println_each_indent(&TASK_NAMES, true);  
+            }
+            task_arg.to_string()
+        },
+        _ => "".to_string(),
+    }
 }
 
 fn parse_minutes(matches: &ArgMatches) -> Option<u64> {
