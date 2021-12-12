@@ -58,7 +58,7 @@ Supply one of these names to the `--task` / `-t` arg to run.
         sol-data -t scrape_blocks -m 60
         ```
 * ### **chunk_blocks**
-    Take a batch of single-block .json files and group them into larger files.
+    Take a directory of many single-block _.json_ files, and group them into larger 'chunk' files.
 
     >Requires _.json_ files from **`scrape_blocks`** task to be in _`blocks/json/`_
     ```
