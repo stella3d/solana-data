@@ -15,9 +15,14 @@ pub fn test_block_loads(chunked_blocks_dir: &str) {
     let mut dir = chunked_blocks_dir;
     if dir.is_empty() { dir = CHUNKED_BLOCKS_DIR }
 
-    println!("\ntesting chunked, typed load of .json files...");
-    let paths = dir_file_paths(fs::read_dir(dir).unwrap());
-    process_block_stream(paths.as_slice());
+    println!("\ntesting load + process of blocks .json files...");
+    match fs::read_dir(dir) {
+        Ok(rd) => {
+            let paths = dir_file_paths(rd);
+            process_block_stream(paths.as_slice());
+        },
+        Err(e) => log_err(&e)
+    };
 }
 
 pub fn dir_file_paths(rd: ReadDir) -> Vec<PathBuf> {
