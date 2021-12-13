@@ -37,14 +37,6 @@ Use one of these names as the `--task` / `-t` arg to run it.
     >Must run this before data is available for other tasks.
 
     #### Arguments:
-    * **`--minutes`** / **`-m`**
-        
-        How long to scrape blocks for, in minutes.
-
-        This would run for an hour:
-        ```
-        sol-data -t scrape_blocks -m 60
-        ```
     * **`--rpc`** / **`-r`**
         
         URL of the RPC node to use for requests.
@@ -74,6 +66,15 @@ Use one of these names as the `--task` / `-t` arg to run it.
             ```
             --rpc https://api.mainnet-beta.solana.com
             ```
+            
+    * **`--minutes`** / **`-m`**
+        
+        How long to scrape blocks for, in minutes.
+
+        This would run for an hour:
+        ```
+        sol-data -t scrape_blocks -m 60 -r main
+        ```
 
 * ### **chunk_blocks**
     Take a directory of many single-block _.json_ files, and group them into larger 'chunk' files.
@@ -144,7 +145,9 @@ sol-data --help
 
 # Near Future
 
-* account / transaction subscription related functionality  
+* account / transaction subscription related functionality 
+
+* make some tasks with hard-coded paths take a path argument   
 
 * add a database backend, to use in place of .json files
   * keeps data in a safer, more convenient place
