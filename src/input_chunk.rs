@@ -2,26 +2,16 @@ use std::{fs, path::PathBuf};
 
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-use crate::{files::{BLOCKS_DIR, dir_file_paths, get_file_size, SlotData, load_block_json, slot_num_from_path, write_blocks_json_chunk}, util::timer, cli::{chunk_size_or_default, CliArguments}};
+use crate::{
+    util::timer, 
+    files::{BLOCKS_DIR, dir_file_paths, get_file_size, SlotData, load_block_json, slot_num_from_path, write_blocks_json_chunk}, 
+    cli::{chunk_size_or_default, CliArguments}
+};
 
 
-type SizedPath<'a> = (&'a PathBuf, u64);            // file's path + size in bytes
+type SizedPath<'a> = (&'a PathBuf, usize);            // file's path + size in bytes
 
-pub(crate) fn chunk_by_size(byte_count: u64) {
-    println!("chunk by size:  {} kb per chunk max", byte_count / 1024);
-    let elapsed = timer(|| {
-        chunk_blocks_by_size(BLOCKS_DIR, byte_count);
-    });
-    println!("\nchunk by size done, time:  {:3} seconds", elapsed.as_secs_f32());
-}
-
-pub(crate) fn chunk_by_size_cli(args: &CliArguments) {
-    // TODO - better pattern for argument defaults
-    let byte_count = chunk_size_or_default(&args);
-    chunk_by_size(byte_count as u64);
-}
-
-pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
+pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: usize) {
     let src_paths = dir_file_paths(fs::read_dir(blocks_dir).unwrap());
     let src_sizes: Vec<SizedPath> = src_paths.par_iter()
         .map(|p| (p, get_file_size(p)))
@@ -42,7 +32,7 @@ pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
             let mut chunk_outputs = Vec::<Vec<&PathBuf>>::new();
             let mut data = Vec::<&PathBuf>::new();
 
-            let mut size_count: u64 = 0;
+            let mut size_count: usize = 0;
             chunk.iter().for_each(|&sized_path| {
                 let path = sized_path.0;
                 let size = sized_path.1;
@@ -73,8 +63,8 @@ pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
     
     println!("got vec<vec<PathBuf>> of input paths, len:  {}", input_path_chunks.len());
 
-    // given the chunked input paths, load and parse them, discarding any that don't parse
     input_path_chunks.par_iter().for_each(|chunk| {
+        // given the chunk of input paths, load and parse them, discarding any that don't parse.
         let slot_data: Vec<SlotData> = chunk.iter()
         .filter_map(|&path| {
             match load_block_json(path) {
@@ -89,8 +79,23 @@ pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
         })
         .collect(); 
 
+        // after a chunk is collected, save it to a file 
         write_blocks_json_chunk(&slot_data);
     });
 
     println!("done running:  chunk_blocks_by_size()");
+}
+
+pub(crate) fn chunk_by_size(byte_count: usize) {
+    println!("chunk by size:  {} kb per chunk max", byte_count / 1024);
+    let elapsed = timer(|| {
+        chunk_blocks_by_size(BLOCKS_DIR, byte_count);
+    });
+    println!("\nchunk by size done, time:  {:3} seconds", elapsed.as_secs_f32());
+}
+
+pub(crate) fn chunk_by_size_cli(args: &CliArguments) {
+    // TODO - better pattern for argument defaults
+    let byte_count = chunk_size_or_default(&args);
+    chunk_by_size(byte_count);
 }

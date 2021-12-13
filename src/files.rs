@@ -215,8 +215,8 @@ pub(crate) const CHUNKED_BLOCKS_DIR: &str = "blocks/json_chunked";
 
 #[derive(Debug)]
 pub(crate) struct FileSizeStats {
-    pub avg: u64,
-    pub count: u64
+    pub avg: usize,
+    pub count: usize
 }
 
 pub fn test_size_average(dir: &str) {
@@ -227,17 +227,17 @@ pub fn test_size_average(dir: &str) {
 pub(crate) fn dir_size_stats<P: AsRef<Path>>(path: P) -> Result<FileSizeStats, std::io::Error> {
     let rd = fs::read_dir(path).unwrap();
     let file_paths = dir_file_paths(rd);
-    let count = file_paths.len() as u64;
+    let count = file_paths.len();
 
-    let size_sum: u64 = file_paths.par_iter().map(get_file_size).sum();
-    let average: u64 = size_sum / count as u64;
+    let size_sum: usize = file_paths.par_iter().map(get_file_size).sum();
+    let average: usize = size_sum/ count;
 
     Ok(FileSizeStats { avg: average, count: count })
 }
 
-pub(crate) fn get_file_size<P: AsRef<Path>>(path: P) -> u64 {
+pub(crate) fn get_file_size<P: AsRef<Path>>(path: P) -> usize {
     match fs::metadata(path) {
-        Ok(meta) => meta.len(),
+        Ok(meta) => meta.len() as usize,
         Err(e) => { log_err(&e); 0 },
     }
 }
