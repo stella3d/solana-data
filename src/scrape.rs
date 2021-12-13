@@ -4,16 +4,6 @@ use serde::{Serialize, Deserialize};
 use crate::{util::{log_err, loop_task, minutes_duration}, client::get_client, files, cli::CliArguments, scrape};
 
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
-pub(crate) struct ScrapeState {
-    pub last_slot: u64,
-}
-
-impl Default for ScrapeState {
-    fn default() -> Self {
-        Self { last_slot: Default::default() }
-    }
-}
 
 pub(crate) fn scrape_blocks(previous_state: ScrapeState, rpc_url: &str) -> Option<ScrapeState> {
     println!("using rpc url:  {}\n", rpc_url);
@@ -71,6 +61,18 @@ pub(crate) fn do_scrape(rpc_url: &str) {
 pub(crate) fn scrape_loop(duration: Duration, rpc_url: &str) {
     let task = || { do_scrape(rpc_url) };
     loop_task(duration, task);
+}
+
+
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+pub(crate) struct ScrapeState {
+    pub last_slot: u64,
+}
+
+impl Default for ScrapeState {
+    fn default() -> Self {
+        Self { last_slot: Default::default() }
+    }
 }
 
 const STATE_FILE: &str = "scrape_state.json";
