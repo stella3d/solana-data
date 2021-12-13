@@ -63,6 +63,21 @@ pub(crate) fn scrape_loop(duration: Duration, rpc_url: &str) {
     loop_task(duration, task);
 }
 
+pub(crate) fn scrape_with_args(cli_args: &CliArguments) {
+    let mins = cli_args.minutes.unwrap_or(60);
+    let duration = minutes_duration(mins);
+
+    match cli_args.rpc.as_ref() {
+        Some(rpc) => {
+            println!("\nscraping blocks for {} minutes, from RPC node:  {}\n", mins, rpc);
+            scrape::scrape_loop(duration, &rpc);
+        },
+        None => {
+            eprintln!("\nSolana RPC url required, but not provided\n");
+        },
+    };
+}
+
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub(crate) struct ScrapeState {
@@ -87,19 +102,4 @@ fn load_state() -> Result<ScrapeState, serde_json::Error> {
                             (std::str::from_utf8(&data).unwrap()),
         Err(_) => Ok(ScrapeState { last_slot: 0 }),
     }
-}
-
-pub(crate) fn scrape_with_args(cli_args: &CliArguments) {
-    let mins = cli_args.minutes.unwrap_or(60);
-    let duration = minutes_duration(mins);
-
-    match cli_args.rpc.as_ref() {
-        Some(rpc) => {
-            println!("\nscraping blocks for {} minutes, from RPC node:  {}\n", mins, rpc);
-            scrape::scrape_loop(duration, &rpc);
-        },
-        None => {
-            eprintln!("\nSolana RPC url required, but not provided\n");
-        },
-    };
 }
