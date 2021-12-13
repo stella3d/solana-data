@@ -2,11 +2,8 @@ use crate::{
     cli::*, tasks::*,
     scrape::scrape_with_args, 
     input_chunk::chunk_by_size_cli,
-    files::{
-        BLOCKS_DIR,  CHUNKED_BLOCKS_DIR, 
-        timed_copy_sample, test_size_average, test_block_loads, 
-    },
-    test_tasks::{load_perf_by_size},
+    files::{BLOCKS_DIR,  CHUNKED_BLOCKS_DIR, timed_copy_sample},
+    test_tasks::{load_perf_by_size, test_size_average, test_block_loads},
 };
 
 pub mod client; 
