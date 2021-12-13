@@ -9,21 +9,12 @@ in the project, run:
 cargo build --release
 ```
 
-The executable should be output to _**`target/release/sol-data(.exe)`**_
+The executable should be output to _**`target/release/sol-data`**_
 
 >on Windows, use `sol-data.exe` wherever the docs say `sol-data`
 
 
 # **Usage**
-
-
-
-## **Help**
-
-Help text can be printed with `--help` / `-h`
-```
-sol-data --help
-```
 
 ## **Tasks**
 All top-level functionality is in a named ___task___.
@@ -143,4 +134,21 @@ Use one of these names as the `--task` / `-t` arg to run it.
     ```
     sol-data -t block_sample
     ```
-#  
+
+## **Help**
+
+Help text can be printed with `--help` / `-h`
+```
+sol-data --help
+```
+
+# Near Future
+
+* account / transaction subscription related functionality  
+
+* add a database backend, to use in place of .json files
+  * keeps data in a safer, more convenient place
+  * should be faster
+  * queries!    
+
+
