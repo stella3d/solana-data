@@ -29,6 +29,7 @@ pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
 
     println!("got source file sizes, count:  {}", src_sizes.len());
 
+    // magic number 24 should probably be number of threads available
     const TASK_COUNT: usize = 24;
     let task_len = src_sizes.len() / TASK_COUNT;
     let sizes_chunks: Vec<&[SizedPath]> = src_sizes.chunks(task_len).collect();
