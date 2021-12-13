@@ -29,16 +29,14 @@ fn main() {
             scrape_with_args(&cli_args),
         CHUNK_BLOCKS_TASK =>
             chunk_by_size_cli(&cli_args),
-        BLOCK_SAMPLE_TASK => {
-            timed_copy_sample(BLOCKS_DIR, cli_args.sample_rate);
-        },
+        BLOCK_SAMPLE_TASK => 
+            timed_copy_sample(BLOCKS_DIR, cli_args.sample_rate),
         COUNT_KEY_TXS_TASK => 
             test_block_loads(CHUNKED_BLOCKS_DIR),
         MEAN_FILE_SIZE_TASK => 
             test_size_average(BLOCKS_DIR),
-        COMPARE_BLOCK_LOADS_TASK => {
-            if let Some(s) = cli_args.source { load_perf_by_size(&s) }
-        },
+        COMPARE_BLOCK_LOADS_TASK =>
+            if let Some(s) = cli_args.source { load_perf_by_size(&s) },
         _ => {}
     }
 }
