@@ -1,15 +1,7 @@
 use std::{fs, path::{PathBuf}};
 
-use crate::{files::{test_block_loads_buf, chunk_blocks_by_size, BLOCKS_DIR}, util::{timer, log_err}};
+use crate::{files::test_block_loads_buf, util::{log_err, timer}};
 
-
-pub(crate) fn test_chunk_by_size(byte_count: u64) {
-    println!("testing chunk by size:  {} kb per chunk max", byte_count / 1024);
-    let elapsed = timer(|| {
-        chunk_blocks_by_size(BLOCKS_DIR, byte_count);
-    });
-    println!("\nchunk by size done, time:  {:3} seconds", elapsed.as_secs_f32());
-}
 
 pub(crate) fn load_perf_by_size(chunked_data_dir: &str) {
     println!("\nstart load test on data dir:\n\t{}", chunked_data_dir);

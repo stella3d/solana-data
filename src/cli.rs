@@ -2,7 +2,7 @@ use clap::{self, Arg, App, ArgMatches};
 
 use crate::{
     tasks::*,
-    util::{log_err, log_err_none, println_each_indent}, 
+    util::{log_err, log_err_none, println_each_indent, MEGABYTE}, 
     networks::expand_rpc_keywords, 
 };
 
@@ -63,9 +63,9 @@ pub(crate) fn get_cli_args() -> CliArguments {
     let task = parse_task(&matches);
     let minutes = parse_minutes(&matches);
     let rpc = parse_rpc(&matches);
+    let source = parse_source(&matches);
     let chunk_size = parse_chunk_size(&matches);
     let sample_rate = parse_sample_rate(&matches);
-    let source = parse_source(&matches);
 
     CliArguments { task, minutes, rpc, source, chunk_size, sample_rate }
 }
@@ -101,6 +101,16 @@ fn parse_rpc(matches: &ArgMatches) -> Option<String> {
     else { None }
 }
 
+fn parse_sample_rate(matches: &ArgMatches) -> Option<usize> {
+    if let Some(sr_arg) = matches.value_of("sample-rate") {
+        match sr_arg.parse::<usize>() {
+            Ok(n) => Some(n),
+            Err(e) => log_err_none(&e)
+        } 
+    } 
+    else { None }
+}
+
 fn parse_chunk_size(matches: &ArgMatches) -> Option<usize> {
     if let Some(mb_arg) = matches.value_of("chunk-mb") {
         match mb_arg.parse::<usize>() {
@@ -111,14 +121,11 @@ fn parse_chunk_size(matches: &ArgMatches) -> Option<usize> {
     else { None }
 }
 
-fn parse_sample_rate(matches: &ArgMatches) -> Option<usize> {
-    if let Some(sr_arg) = matches.value_of("sample-rate") {
-        match sr_arg.parse::<usize>() {
-            Ok(n) => Some(n),
-            Err(e) => log_err_none(&e)
-        } 
-    } 
-    else { None }
+pub(crate) fn chunk_size_or_default(args: &CliArguments) -> usize {
+    // TODO - move handling of default values to a step between main() and cli arg parsing
+    let mut size = (MEGABYTE * 2) as usize;
+    if let Some(s) = args.chunk_size { size = MEGABYTE as usize * s; }
+    size
 }
 
 fn parse_source(matches: &ArgMatches) -> Option<String> {
