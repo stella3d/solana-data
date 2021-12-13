@@ -4,7 +4,24 @@ use serde::{Serialize, Deserialize};
 use crate::{util::{log_err, loop_task, minutes_duration}, client::get_client, files, cli::CliArguments, scrape};
 
 
-pub(crate) fn scrape_blocks(previous_state: ScrapeState, rpc_url: &str) -> Option<ScrapeState> {
+pub(crate) fn do_scrape(rpc_url: &str) {
+    match load_state() {
+        Ok(s) => {
+            println!("\nloaded previous run's state from file:\n{:?}", s);
+            if let Some(new_state) = scrape_blocks(s, rpc_url) {
+                save_state(new_state); 
+            };
+        },
+        Err(e) => {
+            log_err(&e);
+            // we can still run ok, so use default
+            scrape_blocks(ScrapeState { last_slot: 0 }, rpc_url);
+        }
+    }
+}
+
+// request data of recent blocks from an RPC node, and save them to disk
+fn scrape_blocks(previous_state: ScrapeState, rpc_url: &str) -> Option<ScrapeState> {
     println!("using rpc url:  {}\n", rpc_url);
     let mut client = get_client(rpc_url);
 
@@ -42,18 +59,6 @@ pub(crate) fn scrape_blocks(previous_state: ScrapeState, rpc_url: &str) -> Optio
 
     if last == 0 { None }
     else { Some(ScrapeState { last_slot: last }) }
-}
-
-pub(crate) fn do_scrape(rpc_url: &str) {
-    match load_state() {
-        Ok(s) => {
-            println!("\nloaded previous run's state from file:\n{:?}", s);
-            if let Some(new_state) = scrape_blocks(s, rpc_url) {
-                save_state(new_state); 
-            };
-        },
-        Err(e) => log_err(&e)
-    }
 }
 
 pub(crate) fn scrape_loop(duration: Duration, rpc_url: &str) {
