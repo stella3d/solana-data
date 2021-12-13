@@ -1,4 +1,4 @@
-use std::{time::{Duration, Instant}, fmt::{Debug, Display}};
+use std::{time::{Duration, Instant}, fmt::{Debug, Display}, process::exit};
 
 
 pub(crate) const MEGABYTE: usize = 1024 * 1024;
@@ -12,6 +12,18 @@ pub fn loop_task<F: Fn() -> ()>(total_time: Duration, loop_fn: F) {
     println!("loop task finished after {:3} seconds", start.elapsed().as_secs_f32());
 }
 
+// run a task that we can't proceed without the success of, exit if it fails
+pub(crate) fn do_or_die<F: FnOnce() -> Result<T, E>, T, E: Debug + Display>
+    (task: F, err_msg: &str) -> T 
+{
+    match task() {
+        Ok(output) => output,
+        Err(e) => {
+            log_err(&e);
+            log_err(err_msg);
+            exit(1);
+        }}
+}
 
 // EXECUTION TIMING
 pub struct TimedData<T> {

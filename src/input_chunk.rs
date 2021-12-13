@@ -1,10 +1,10 @@
-use std::{fs::{read_dir, ReadDir}, path::PathBuf, process::exit, fmt::{Debug, Display}};
+use std::{fs::{read_dir, ReadDir}, path::PathBuf};
 
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
     cli::CliArguments,
-    util::{timer, log_err, MEGABYTE}, 
+    util::{timer, MEGABYTE, do_or_die}, 
     files::{
         BLOCKS_DIR, SlotData, dir_file_paths, get_file_size, 
         slot_num_from_path, load_block_json, write_blocks_json_chunk
@@ -13,21 +13,6 @@ use crate::{
 
 
 type SizedPath<'a> = (&'a PathBuf, usize);      // file's path + size in bytes
-
-
-// run a task that we can't proceed without the success of, exit if it fails
-pub(crate) fn do_or_exit<F: FnOnce() -> Result<T, E>, T, E: Debug + Display>
-    (task: F, err_msg: &str) -> T 
-{
-    match task() {
-        Ok(output) => output,
-        Err(e) => {
-            log_err(&e);
-            log_err(err_msg);
-            exit(1);
-        }}
-}
-
 
 pub(crate) fn chunk_blocks_by_size(src_dir: ReadDir, max_input_bytes: usize) {
     let src_paths = dir_file_paths(src_dir);
@@ -105,7 +90,6 @@ pub(crate) fn chunk_blocks_by_size(src_dir: ReadDir, max_input_bytes: usize) {
     println!("done running:  chunk_blocks_by_size()");
 }
 
-
 const NO_DIR_EXIT_MSG: &str = "can't proceed without a valid directory!\nexiting\n";
 
 // handler for the 'chunk_blocks' CLI task
@@ -115,7 +99,7 @@ pub(crate) fn chunk_by_size_cli(args: &CliArguments) {
     
     // TODO - make hardcoded BLOCKS_DIR path into CLI arg
     // exit if source can't be read
-    let src_dir = do_or_exit(|| read_dir(BLOCKS_DIR), NO_DIR_EXIT_MSG);
+    let src_dir = do_or_die(|| read_dir(BLOCKS_DIR), NO_DIR_EXIT_MSG);
 
     println!("chunking blocks by size:  {} kb per sequential group, max", size / 1024);
     let elapsed = timer(|| {
