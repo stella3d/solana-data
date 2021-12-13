@@ -8,7 +8,6 @@ use solana_transaction_status::{EncodedTransactionWithStatusMeta, UiTransactionE
 use crate::{files::{slot_json_path}, networks::DEVNET_RPC};
 
 
-
 #[derive(Clone)]
 pub struct ClientWrapper {
     pub rpc: Arc<RpcClient>,
