@@ -140,10 +140,26 @@ Use one of these names as the `--task` / `-t` arg to run it.
 
 Help text can be printed with `--help` / `-h`
 ```
-sol-data --help
+$ ./sol-data --help
+
+USAGE:
+    sol-data [OPTIONS] --task <task>
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+        --chunk-mb <chunk-mb>          size (megabytes) for chunked collections of input data, default: 2
+    -m, --minutes <minutes>            How long to run the task, in minutes
+    -r, --rpc <rpc>                    URL of the Solana RPC node to use, or: 1 of 'dev','test','main'
+        --sample-rate <sample-rate>    number of source files for each 1 copied to new sample, default: 50
+    -s, --source <source>              path to read data from
+    -t, --task <task>                  Which sub-command to run
 ```
+
 #
-# Near Future
+# Near Future?
 
 * account / transaction subscription related functionality 
 
