@@ -1,7 +1,7 @@
 use std::{time::{Duration, Instant}, fmt::{Debug, Display}};
 
 
-pub(crate) const MEGABYTE: u64 = 1024 * 1024;
+pub(crate) const MEGABYTE: usize = 1024 * 1024;
 
 pub fn loop_task<F: Fn() -> ()>(total_time: Duration, loop_fn: F) {
     let start = Instant::now();
@@ -37,7 +37,7 @@ pub(crate) fn minutes_duration(minutes: u64) -> Duration {
 
 
 // LOGGING (errors)
-pub fn log_err<E: Debug + Display>(e: &E) { eprintln!("{}", e); }
+pub fn log_err<E: Debug + Display + ?Sized>(e: &E) { eprintln!("{}", e); }
 
 pub fn log_err_none<T, E: Debug + Display>(e: E) -> Option<T> { eprintln!("{}", e); None }
 

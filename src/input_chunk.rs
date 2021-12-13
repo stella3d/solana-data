@@ -1,18 +1,36 @@
-use std::{fs, path::PathBuf};
+use std::{fs::{read_dir, ReadDir}, path::PathBuf, process::exit, fmt::{Debug, Display}};
 
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
-    util::timer, 
-    files::{BLOCKS_DIR, dir_file_paths, get_file_size, SlotData, load_block_json, slot_num_from_path, write_blocks_json_chunk}, 
-    cli::{chunk_size_or_default, CliArguments}
+    cli::CliArguments,
+    util::{timer, log_err, MEGABYTE}, 
+    files::{
+        BLOCKS_DIR, SlotData, dir_file_paths, get_file_size, 
+        slot_num_from_path, load_block_json, write_blocks_json_chunk
+    } 
 };
 
 
-type SizedPath<'a> = (&'a PathBuf, usize);            // file's path + size in bytes
+type SizedPath<'a> = (&'a PathBuf, usize);      // file's path + size in bytes
 
-pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: usize) {
-    let src_paths = dir_file_paths(fs::read_dir(blocks_dir).unwrap());
+
+// run a task that we can't proceed without the success of, exit if it fails
+pub(crate) fn do_or_exit<F: FnOnce() -> Result<T, E>, T, E: Debug + Display>
+    (task: F, err_msg: &str) -> T 
+{
+    match task() {
+        Ok(output) => output,
+        Err(e) => {
+            log_err(&e);
+            log_err(err_msg);
+            exit(1);
+        }}
+}
+
+
+pub(crate) fn chunk_blocks_by_size(src_dir: ReadDir, max_input_bytes: usize) {
+    let src_paths = dir_file_paths(src_dir);
     let src_sizes: Vec<SizedPath> = src_paths
         .par_iter()
         .map(|p| (p, get_file_size(p)))
@@ -29,12 +47,12 @@ pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: usize) {
     // input paths that each total close to the chunk size limit.
     let input_path_chunks: Vec<Vec<&PathBuf>> = sizes_chunks
         .par_iter()
-        .flat_map(|&chunk| {
+        .flat_map(|&input_slice| {
             let mut chunk_outputs = Vec::<Vec<&PathBuf>>::new();
             let mut data = Vec::<&PathBuf>::new();
 
             let mut size_count: usize = 0;
-            chunk.iter().for_each(|&sized_path| {
+            input_slice.iter().for_each(|&sized_path| {
                 let path = sized_path.0;
                 let size = sized_path.1;
 
@@ -87,16 +105,21 @@ pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: usize) {
     println!("done running:  chunk_blocks_by_size()");
 }
 
-pub(crate) fn chunk_by_size(byte_count: usize) {
-    println!("chunk by size:  {} kb per chunk max", byte_count / 1024);
-    let elapsed = timer(|| {
-        chunk_blocks_by_size(BLOCKS_DIR, byte_count);
-    });
-    println!("\nchunk by size done, time:  {:3} seconds", elapsed.as_secs_f32());
-}
 
+const NO_DIR_EXIT_MSG: &str = "can't proceed without a valid directory!\nexiting\n";
+
+// handler for the 'chunk_blocks' CLI task
 pub(crate) fn chunk_by_size_cli(args: &CliArguments) {
-    // TODO - better pattern for argument defaults
-    let byte_count = chunk_size_or_default(&args);
-    chunk_by_size(byte_count);
+    let size = if let Some(mbs) = args.chunk_size { MEGABYTE * mbs }
+               else { MEGABYTE * 2 };       // 2mb benchmarked best on dev machine, so it's default
+    
+    // TODO - make hardcoded BLOCKS_DIR path into CLI arg
+    // exit if source can't be read
+    let src_dir = do_or_exit(|| read_dir(BLOCKS_DIR), NO_DIR_EXIT_MSG);
+
+    println!("chunking blocks by size:  {} kb per sequential group, max", size / 1024);
+    let elapsed = timer(|| {
+        chunk_blocks_by_size(src_dir, size);
+    });
+    println!("done, time:  {:3} seconds", elapsed.as_secs_f32());
 }

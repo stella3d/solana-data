@@ -1,9 +1,8 @@
 use clap::{self, Arg, App, ArgMatches};
 
 use crate::{
-    tasks::*,
-    util::{log_err, log_err_none, println_each_indent, MEGABYTE}, 
-    networks::expand_rpc_keywords, 
+    tasks::*, networks::expand_rpc_keywords,
+    util::{log_err, log_err_none, println_each_indent} 
 };
 
 
@@ -119,13 +118,6 @@ fn parse_chunk_size(matches: &ArgMatches) -> Option<usize> {
         }
     } 
     else { None }
-}
-
-pub(crate) fn chunk_size_or_default(args: &CliArguments) -> usize {
-    // TODO - move handling of default values to a step between main() and cli arg parsing
-    let mut size = (MEGABYTE * 2) as usize;
-    if let Some(s) = args.chunk_size { size = MEGABYTE as usize * s; }
-    size
 }
 
 fn parse_source(matches: &ArgMatches) -> Option<String> {
