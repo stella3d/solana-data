@@ -1,6 +1,6 @@
-use std::{fs::{read_dir, ReadDir}, path::{PathBuf}};
+use std::{fs::{read_dir, ReadDir}, path::{PathBuf}, cmp::max};
 
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use rayon::{iter::{IntoParallelRefIterator, ParallelIterator}, current_num_threads};
 
 use crate::{
     cli::CliArguments,
@@ -73,14 +73,11 @@ pub(crate) fn chunk_blocks_by_size(src_dir: ReadDir, max_input_bytes: usize) {
 
     println!("source file count:  {}", src_sizes.len());
 
-    // limited number of tasks reduces undersized chunks without much drawback - usually disk bound
-    // actual count is TASK_COUNT+1, because of the remainder chunk
-    const TASK_COUNT: usize = 8;
-    let task_len = src_sizes.len() / TASK_COUNT;
-    println!("task length:  {}", task_len);
-
+    let nt = current_num_threads();
+    let task_count: usize = max((nt / 2) + (nt / 6) - 1, 1);
+    // actual task count is often +1, because of the remainder
+    let task_len = src_sizes.len() / task_count;
     let sizes_chunks: Vec<&[SizedPath]> = src_sizes.chunks(task_len).collect();
-    println!("input slice count:  {}", sizes_chunks.len());
 
     // parallelizes, with a minor issue: the last chunk in each slice being undersized
     // slice often runs out of src paths before full chunk accrues
