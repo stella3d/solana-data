@@ -4,7 +4,6 @@ use serde::{Serialize, Deserialize};
 use crate::{util::{log_err, loop_task, minutes_duration}, client::get_client, files, cli::CliArguments, scrape};
 
 
-
 pub(crate) fn scrape_blocks(previous_state: ScrapeState, rpc_url: &str) -> Option<ScrapeState> {
     println!("using rpc url:  {}\n", rpc_url);
     let mut client = get_client(rpc_url);
@@ -17,9 +16,7 @@ pub(crate) fn scrape_blocks(previous_state: ScrapeState, rpc_url: &str) -> Optio
             0u64 
         }
     };
-    if slot <= 0 {
-        return None; 
-    }
+    if slot <= 0 { return None; }
 
     let backlog_limit: usize = 1024;
     let slot_count = max(slot - previous_state.last_slot, backlog_limit as u64);
@@ -32,7 +29,7 @@ pub(crate) fn scrape_blocks(previous_state: ScrapeState, rpc_url: &str) -> Optio
     println!("\n{} slots to request: {}-{}\n", slots.len(), slots.first().unwrap(), slots.last().unwrap());
 
     let last = client.get_block_details(&slots,
-|(slot, ecb)| {
+        |(slot, ecb)| {
             match *ecb {
                 Some(b) => {
                     //println!("write range block file:  slot_{}", slot);
