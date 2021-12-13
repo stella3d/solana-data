@@ -66,7 +66,8 @@ pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
             });
 
             chunk_outputs
-        }).collect();
+        })
+        .collect();
     
     println!("got vec<vec<PathBuf>> of input paths, len:  {}", input_path_chunks.len());
 
@@ -87,6 +88,6 @@ pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
 
         write_blocks_json_chunk(&slot_data);
     });
-    
+
     println!("done running:  chunk_blocks_by_size()");
 }
