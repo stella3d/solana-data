@@ -46,7 +46,7 @@ Use one of these names as the `--task` / `-t` arg to run it.
     >Must run this before data is available for other tasks.
 
     #### Arguments:
-    * `--minutes` / `-m`
+    * **`--minutes`** / **`-m`**
         
         How long to scrape blocks for, in minutes.
 
@@ -54,7 +54,7 @@ Use one of these names as the `--task` / `-t` arg to run it.
         ```
         sol-data -t scrape_blocks -m 60
         ```
-    * `--rpc` / `-r`
+    * **`--rpc`** / **`-r`**
         
         URL of the RPC node to use for requests.
         
@@ -92,17 +92,19 @@ Use one of these names as the `--task` / `-t` arg to run it.
     >Requires _.json_ files from **`scrape_blocks`** task to be in _`blocks/json/`_
 
     #### Arguments:
-    * `--chunk-mb`
+    * **`--chunk-mb`**
         
         The max size of the input data (in megabytes) grouped into 1 output chunk / file.
 
-
-    ###### Example
-    Create ~2MB, then ~8MB chunk files.
-    ```
-    sol-data -t chunk_blocks --chunk-mb 2;
-    sol-data -t chunk_blocks --chunk-mb 8;
-    ```
+        ###### Examples
+        * Create ~2MB chunks.
+            ```
+            sol-data -t chunk_blocks --chunk-mb 2;
+            ```
+        * Create ~16MB chunks.
+            ```
+            sol-data -t chunk_blocks --cmb 16;
+            ```
 * ### **count_txs**
     Count how many times each public key is seen in the given blocks' transactions.
     
@@ -122,10 +124,18 @@ Use one of these names as the `--task` / `-t` arg to run it.
 * ### **cmp_block_loads**
     Run performance test, looking at the effect of file size on loading & processing many chunks of blocks.
     
-    >Requires folders of differently-chunked _.json_ files, from **`chunk_blocks`** task runs, to be in _`blocks/json/sized`_
-    ```
-    sol-data -t cmp_block_loads
-    ```
+    >Requires that source is a directory with > 1 sub-folders of differently-chunked _.json_ files, from **`chunk_blocks`** runs. 
+    >Putting files here is _**not automated!**_
+
+    #### Arguments:
+    * **`--source`** / **`--src`** / **`-s`**
+        
+        The file path to read input data from.
+
+        ```
+        sol-data -t cmp_block_loads -s blocks/load_cmp;
+        sol-data -t cmp_block_loads --source some/other/folder;
+        ```
 * ### **block_sample**
     Copy a sample (1/50 files) of _`blocks/json/*.json`_ data to _`blocks/json_sample`_.
 
