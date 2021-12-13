@@ -1,4 +1,4 @@
-use std::{fs::{read_dir, ReadDir}, path::PathBuf};
+use std::{fs::{read_dir, ReadDir}, path::{PathBuf}};
 
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
@@ -14,6 +14,56 @@ use crate::{
 
 type SizedPath<'a> = (&'a PathBuf, usize);      // file's path + size in bytes
 
+
+// get sequential groups of input paths that each total as close to the size limit as possible.
+fn sized_path_chunks<'a>(inputs: &'a [SizedPath], max_bytes: usize) -> Vec<Vec<&'a PathBuf>> {
+    let mut chunk_outputs = Vec::<Vec<&PathBuf>>::new();
+    let mut data = Vec::<&PathBuf>::new();
+
+    // TODO - handle instead of unwrap ? not sure how last() can fail
+    let last_input = inputs.last().unwrap();
+    
+    let mut size_count: usize = 0;
+    inputs.iter().for_each(|sized_path| {
+        let path = sized_path.0;
+        let size = sized_path.1;
+        let mut pushed = false;
+
+        if size > max_bytes && size_count == 0 {
+            // this 1 block is bigger than our target chunk size, make a chunk of 1
+            println!("single block chunk:  {} bytes", size);
+            data.push(path);
+            size_count += size;
+            pushed = true;
+        }
+        
+        let next_size = size_count + size;
+        if next_size < max_bytes && path == last_input.0 {
+            // println!("pushing undersize chunk from end of iterator");
+            data.push(path);
+            size_count += size;
+            pushed = true;
+        }
+
+        let chunk_ready = next_size >= max_bytes;
+        if pushed || chunk_ready {
+            println!("output chunk:  {} bytes,  {} blocks", size_count, data.len());
+            chunk_outputs.push(data.clone());
+            data.clear();
+            size_count = 0;
+        }
+        if !pushed { 
+            data.push(path); 
+            size_count += size;
+        }
+    });
+
+    chunk_outputs
+}
+
+// given a dir of many single-block .json files, group the inputs sequentially,  
+// each group sized as close to the limit as possible.
+// parse those groups, write them to single files in the out dir
 pub(crate) fn chunk_blocks_by_size(src_dir: ReadDir, max_input_bytes: usize) {
     let src_paths = dir_file_paths(src_dir);
     let src_sizes: Vec<SizedPath> = src_paths
@@ -21,51 +71,22 @@ pub(crate) fn chunk_blocks_by_size(src_dir: ReadDir, max_input_bytes: usize) {
         .map(|p| (p, get_file_size(p)))
         .collect();
 
-    println!("got source file sizes, count:  {}", src_sizes.len());
+    println!("source file count:  {}", src_sizes.len());
 
-    // magic number 24 should probably be number of threads available
-    const TASK_COUNT: usize = 24;
+    // a limited number of tasks reduces the number of undersized chunks
+    const TASK_COUNT: usize = 8;
     let task_len = src_sizes.len() / TASK_COUNT;
     let sizes_chunks: Vec<&[SizedPath]> = src_sizes.chunks(task_len).collect();
-
-    // given input dir of single-block files, get sequential groups of
-    // input paths that each total close to the chunk size limit.
+        
+    // parallelizes, but there's an issue with the last chunk in each slice being undersized.
+    // it happens because the slice runs out of source paths to use. 
+    // chunks are sequential, no combining small ones from diffent slices to correct
     let input_path_chunks: Vec<Vec<&PathBuf>> = sizes_chunks
         .par_iter()
-        .flat_map(|&input_slice| {
-            let mut chunk_outputs = Vec::<Vec<&PathBuf>>::new();
-            let mut data = Vec::<&PathBuf>::new();
-
-            let mut size_count: usize = 0;
-            input_slice.iter().for_each(|&sized_path| {
-                let path = sized_path.0;
-                let size = sized_path.1;
-
-                let mut pushed = false;
-                if size > max_input_bytes && size_count == 0 {
-                    // this one block is bigger than our target chunk size, make a chunk of 1
-                    println!("single block chunk:  {} bytes", size);
-                    data.push(path);
-                    size_count += size;
-                    pushed = true;
-                }
-                if pushed || size_count + size > max_input_bytes {
-                    println!("creating input chunk:  {} bytes,  {} blocks", size_count, data.len());
-                    chunk_outputs.push(data.clone());
-                    data.clear();
-                    size_count = 0;
-                }
-                if !pushed { 
-                    data.push(path); 
-                    size_count += size;
-                }
-            });
-
-            chunk_outputs
-        })
+        .flat_map(|&paths| sized_path_chunks(&paths, max_input_bytes))
         .collect();
     
-    println!("got vec<vec<PathBuf>> of input paths, len:  {}", input_path_chunks.len());
+    println!("input path chunk count:  {}", input_path_chunks.len());
 
     input_path_chunks.par_iter().for_each(|chunk| {
         // given the chunk of input paths, load and parse them, discarding any that don't parse.
@@ -86,8 +107,6 @@ pub(crate) fn chunk_blocks_by_size(src_dir: ReadDir, max_input_bytes: usize) {
         // after a chunk is collected, save it to a file 
         write_blocks_json_chunk(&slot_data);
     });
-
-    println!("done running:  chunk_blocks_by_size()");
 }
 
 const NO_DIR_EXIT_MSG: &str = "can't proceed without a valid directory!\nexiting\n";
