@@ -1,4 +1,4 @@
-use std::{cmp::max, time::Duration, fs, thread};
+use std::{cmp::max, time::Duration, fs};
 use serde::{Serialize, Deserialize};
 
 use crate::{util::{log_err, loop_task, minutes_duration}, client::get_client, files, cli::CliArguments, scrape};
