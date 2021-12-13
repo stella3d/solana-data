@@ -15,52 +15,6 @@ use crate::{
 type SizedPath<'a> = (&'a PathBuf, usize);      // file's path + size in bytes
 
 
-// get sequential groups of input paths that each total as close to the size limit as possible.
-fn sized_path_chunks<'a>(inputs: &'a [SizedPath], max_bytes: usize) -> Vec<Vec<&'a PathBuf>> {
-    let mut chunk_outputs = Vec::<Vec<&PathBuf>>::new();
-    let mut data = Vec::<&PathBuf>::new();
-
-    // TODO - handle instead of unwrap ? not sure how last() can fail
-    let last_input = inputs.last().unwrap();
-    
-    let mut size_count: usize = 0;
-    inputs.iter().for_each(|sized_path| {
-        let path = sized_path.0;
-        let size = sized_path.1;
-        let mut pushed = false;
-
-        if size > max_bytes && size_count == 0 {
-            // this 1 block is bigger than our target chunk size, make a chunk of 1
-            println!("single block chunk:  {} bytes", size);
-            data.push(path);
-            size_count += size;
-            pushed = true;
-        }
-        
-        let next_size = size_count + size;
-        if next_size < max_bytes && path == last_input.0 {
-            // println!("pushing undersize chunk from end of iterator");
-            data.push(path);
-            size_count += size;
-            pushed = true;
-        }
-
-        let chunk_ready = next_size >= max_bytes;
-        if pushed || chunk_ready {
-            //println!("output chunk:  {} bytes,  {} blocks", size_count, data.len());
-            chunk_outputs.push(data.clone());
-            data.clear();
-            size_count = 0;
-        }
-        if !pushed { 
-            data.push(path); 
-            size_count += size;
-        }
-    });
-
-    chunk_outputs
-}
-
 // given a dir of many single-block .json files, group the inputs sequentially,  
 // each group sized as close to the limit as possible.
 // parse those groups, write them to single files in the out dir
@@ -111,6 +65,52 @@ pub(crate) fn chunk_blocks_by_size(src_dir: ReadDir, max_input_bytes: usize) {
         // after a chunk is collected, save it to a file 
         write_blocks_json_chunk(&slot_data);
     });
+}
+
+// get sequential groups of input paths that each total as close to the size limit as possible.
+fn sized_path_chunks<'a>(inputs: &'a [SizedPath], max_bytes: usize) -> Vec<Vec<&'a PathBuf>> {
+    let mut chunk_outputs = Vec::<Vec<&PathBuf>>::new();
+    let mut data = Vec::<&PathBuf>::new();
+
+    // TODO - handle instead of unwrap ? not sure how last() can fail
+    let last_input = inputs.last().unwrap();
+    
+    let mut size_count: usize = 0;
+    inputs.iter().for_each(|sized_path| {
+        let path = sized_path.0;
+        let size = sized_path.1;
+        let mut pushed = false;
+
+        if size > max_bytes && size_count == 0 {
+            // this 1 block is bigger than our target chunk size, make a chunk of 1
+            println!("single block chunk:  {} bytes", size);
+            data.push(path);
+            size_count += size;
+            pushed = true;
+        }
+        
+        let next_size = size_count + size;
+        if next_size < max_bytes && path == last_input.0 {
+            // println!("pushing undersize chunk from end of iterator");
+            data.push(path);
+            size_count += size;
+            pushed = true;
+        }
+
+        let chunk_ready = next_size >= max_bytes;
+        if pushed || chunk_ready {
+            //println!("output chunk:  {} bytes,  {} blocks", size_count, data.len());
+            chunk_outputs.push(data.clone());
+            data.clear();
+            size_count = 0;
+        }
+        if !pushed { 
+            data.push(path); 
+            size_count += size;
+        }
+    });
+
+    chunk_outputs
 }
 
 const NO_DIR_EXIT_MSG: &str = "can't proceed without a valid directory!\nexiting\n";
