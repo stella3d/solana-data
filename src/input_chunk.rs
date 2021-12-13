@@ -86,5 +86,6 @@ pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
 
         write_blocks_json_chunk(&slot_data);
     });
+    
     println!("done running:  chunk_blocks_by_size()");
 }
