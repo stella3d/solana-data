@@ -6,7 +6,6 @@ use serde_json;
 use crate::{util::{log_err_none, log_err, timer}, analyze::{process_block_stream, CountedTxs}};
 
 pub fn test_block_loads_buf(chunked_blocks_dir: &PathBuf) {
-    println!("\ntesting chunked, typed load of .json files...");
     let paths = dir_file_paths(fs::read_dir(chunked_blocks_dir).unwrap());
     process_block_stream(paths.as_slice());
 }
