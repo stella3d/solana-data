@@ -13,7 +13,8 @@ type SizedPath<'a> = (&'a PathBuf, usize);            // file's path + size in b
 
 pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: usize) {
     let src_paths = dir_file_paths(fs::read_dir(blocks_dir).unwrap());
-    let src_sizes: Vec<SizedPath> = src_paths.par_iter()
+    let src_sizes: Vec<SizedPath> = src_paths
+        .par_iter()
         .map(|p| (p, get_file_size(p)))
         .collect();
 
