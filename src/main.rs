@@ -43,8 +43,11 @@ fn main() {
             test_block_loads(CHUNKED_BLOCKS_DIR),
         MEAN_FILE_SIZE_TASK => 
             test_size_average(BLOCKS_DIR),
-        COMPARE_BLOCK_LOADS_TASK => 
-            load_perf_by_size("blocks/sized"),
+        COMPARE_BLOCK_LOADS_TASK => {
+            let mut src = "blocks/sized".to_string();      
+            if let Some(s) = cli_args.source { src = s; }
+            load_perf_by_size(&src);
+        },
         _ => {}
     }
 }

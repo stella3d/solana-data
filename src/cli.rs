@@ -11,6 +11,7 @@ pub(crate) struct CliArguments {
     pub task: String,                       // non-Option because it's required
     pub minutes: Option<u64>,
     pub rpc: Option<String>,
+    pub source: Option<String>,
     pub chunk_size: Option<usize>,
     pub sample_rate: Option<usize>
 }
@@ -64,8 +65,9 @@ pub(crate) fn get_cli_args() -> CliArguments {
     let rpc = parse_rpc(&matches);
     let chunk_size = parse_chunk_size(&matches);
     let sample_rate = parse_sample_rate(&matches);
+    let source = parse_source(&matches);
 
-    CliArguments { task, minutes, rpc, chunk_size, sample_rate }
+    CliArguments { task, minutes, rpc, source, chunk_size, sample_rate }
 }
 
 fn parse_task(matches: &ArgMatches) -> String {
@@ -116,5 +118,14 @@ fn parse_sample_rate(matches: &ArgMatches) -> Option<usize> {
             Err(e) => log_err_none(&e)
         } 
     } 
+    else { None }
+}
+
+fn parse_source(matches: &ArgMatches) -> Option<String> {
+    as_string_opt(matches.value_of("source"))
+}
+
+fn as_string_opt(s: Option<&str>) -> Option<String> {
+    if let Some(st) = s { Some(st.to_string()) } 
     else { None }
 }
