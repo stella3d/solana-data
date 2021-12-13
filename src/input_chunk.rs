@@ -34,6 +34,8 @@ pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
     let task_len = src_sizes.len() / TASK_COUNT;
     let sizes_chunks: Vec<&[SizedPath]> = src_sizes.chunks(task_len).collect();
 
+    // given input dir of single-block files, get sequential groups of
+    // input paths that each total close to the chunk size limit.
     let input_path_chunks: Vec<Vec<&PathBuf>> = sizes_chunks
         .par_iter()
         .flat_map(|&chunk| {
@@ -71,6 +73,7 @@ pub(crate) fn chunk_blocks_by_size(blocks_dir: &str, max_input_bytes: u64) {
     
     println!("got vec<vec<PathBuf>> of input paths, len:  {}", input_path_chunks.len());
 
+    // given the chunked input paths, load and parse them, discarding any that don't parse
     input_path_chunks.par_iter().for_each(|chunk| {
         let slot_data: Vec<SlotData> = chunk.iter()
         .filter_map(|&path| {
