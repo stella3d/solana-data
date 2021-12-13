@@ -47,7 +47,7 @@ fn sized_path_chunks<'a>(inputs: &'a [SizedPath], max_bytes: usize) -> Vec<Vec<&
 
         let chunk_ready = next_size >= max_bytes;
         if pushed || chunk_ready {
-            println!("output chunk:  {} bytes,  {} blocks", size_count, data.len());
+            //println!("output chunk:  {} bytes,  {} blocks", size_count, data.len());
             chunk_outputs.push(data.clone());
             data.clear();
             size_count = 0;
@@ -73,20 +73,24 @@ pub(crate) fn chunk_blocks_by_size(src_dir: ReadDir, max_input_bytes: usize) {
 
     println!("source file count:  {}", src_sizes.len());
 
-    // a limited number of tasks reduces the number of undersized chunks
+    // limited number of tasks reduces undersized chunks without much drawback - usually disk bound
+    // actual count is TASK_COUNT+1, because of the remainder chunk
     const TASK_COUNT: usize = 8;
     let task_len = src_sizes.len() / TASK_COUNT;
+    println!("task length:  {}", task_len);
+
     let sizes_chunks: Vec<&[SizedPath]> = src_sizes.chunks(task_len).collect();
-        
-    // parallelizes, but there's an issue with the last chunk in each slice being undersized.
-    // it happens because the slice runs out of source paths to use. 
-    // chunks are sequential, no combining small ones from diffent slices to correct
+    println!("input slice count:  {}", sizes_chunks.len());
+
+    // parallelizes, with a minor issue: the last chunk in each slice being undersized
+    // slice often runs out of src paths before full chunk accrues
+    // almost always enough output files that this is not an issue
     let input_path_chunks: Vec<Vec<&PathBuf>> = sizes_chunks
         .par_iter()
         .flat_map(|&paths| sized_path_chunks(&paths, max_input_bytes))
         .collect();
     
-    println!("input path chunk count:  {}", input_path_chunks.len());
+    println!("output chunk count:  {}", input_path_chunks.len());
 
     input_path_chunks.par_iter().for_each(|chunk| {
         // given the chunk of input paths, load and parse them, discarding any that don't parse.
