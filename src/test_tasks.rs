@@ -1,8 +1,10 @@
 use std::{fs, path::{PathBuf}};
 
-use crate::{files::test_block_loads_buf, util::{log_err, timer}};
+use crate::{files::{test_block_loads_buf, CHUNKED_BLOCKS_DIR, dir_file_paths, dir_size_stats}, util::{log_err, timer}, analyze::process_block_stream};
 
 
+// load multiple folders of files, containing the same source data 
+// grouped into different size chunks, compare how performance varies with size
 pub(crate) fn load_perf_by_size(chunked_data_dir: &str) {
     println!("\nstart load test on data dir:\n\t{}", chunked_data_dir);
 
@@ -28,4 +30,24 @@ pub(crate) fn load_perf_by_size(chunked_data_dir: &str) {
         },
         Err(e) => log_err(&e),
     };
+}
+
+pub(crate) fn test_block_loads(chunked_blocks_dir: &str) {
+    let mut dir = chunked_blocks_dir;
+    if dir.is_empty() { dir = CHUNKED_BLOCKS_DIR }
+
+    println!("\nloading + processing chunked Solana block data from {}", dir);
+    match fs::read_dir(dir) {
+        Ok(rd) => {
+            let paths = dir_file_paths(rd);
+            process_block_stream(paths.as_slice());
+        },
+        Err(e) => log_err(&e)
+    };
+}
+
+// just see if the average file size code runs
+pub fn test_size_average(dir: &str) {
+    let stats = dir_size_stats(dir).unwrap();
+    println!("files:\n\tcount:{}\taverage: {} kb\n", stats.count, stats.avg / 1024)
 }

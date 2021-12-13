@@ -11,20 +11,6 @@ pub fn test_block_loads_buf(chunked_blocks_dir: &PathBuf) {
     process_block_stream(paths.as_slice());
 }
 
-pub fn test_block_loads(chunked_blocks_dir: &str) {
-    let mut dir = chunked_blocks_dir;
-    if dir.is_empty() { dir = CHUNKED_BLOCKS_DIR }
-
-    println!("\ntesting load + process of blocks .json files...");
-    match fs::read_dir(dir) {
-        Ok(rd) => {
-            let paths = dir_file_paths(rd);
-            process_block_stream(paths.as_slice());
-        },
-        Err(e) => log_err(&e)
-    };
-}
-
 pub fn dir_file_paths(rd: ReadDir) -> Vec<PathBuf> {
     rd.map(|entry_res| {
         match entry_res {
@@ -43,7 +29,7 @@ pub fn write_json_encoded_block(slot: u64, block: &EncodedConfirmedBlock) {
     let json_r = serde_json::to_string(&block);
     match json_r {
         Ok(data) => {
-            let name = slot_file_name(BLOCKS_DIR, slot, JSON_EXT);
+            let name = slot_file_name(BLOCKS_DIR, slot, ".json");
 
             if Path::exists(Path::new(&name)) {
                 println!("FILE {} ALREADY PRESENT, not overriding", name);
@@ -84,26 +70,22 @@ pub fn load_blocks_chunk_json<P: AsRef<Path>>(path: P) -> Option<Vec<SlotData>> 
     }
 }
 
-pub fn load_block_json_unwrap<P: AsRef<Path>>(path: P) -> EncodedConfirmedBlock {
-    load_block_json(path).unwrap()
-}
 
-const JSON_EXT: &str = ".json";
 const SLOT_PREFIX: &str = "slot_";
-
 pub(crate) fn slot_json_path(slot: u64) -> String {
-    format!("./{}/{}{}{}", BLOCKS_DIR, SLOT_PREFIX, slot, JSON_EXT)
+    format!("./{}/{}{}.json", BLOCKS_DIR, SLOT_PREFIX, slot)
 }
 
 pub(crate) fn slot_file_name(dir: &str, slot: u64, extension: &str) -> String {
     format!("{}/{}{}{}", dir, SLOT_PREFIX, slot, extension)
 }
 
+
 const TX_COUNT_PRE: &str = "key_tx_count_";
 // TODO - should i write a trait for "save to file" ?
 pub(crate) fn write_pubkey_counts(dir: String, counts: &CountedTxs) {
     let map = counts.data;
-    let path = format!("{}{}{}{}", dir, TX_COUNT_PRE, counts.total, JSON_EXT);
+    let path = format!("{}{}{}.json", dir, TX_COUNT_PRE, counts.total);
     match serde_json::to_string(&map) {
         Ok(json) => {
             match fs::write(&path, json) {
@@ -114,6 +96,7 @@ pub(crate) fn write_pubkey_counts(dir: String, counts: &CountedTxs) {
         Err(e) => { log_err(&e) }
     };
 }
+
 
 pub(crate) type SlotData = (u64, EncodedConfirmedBlock);
 
@@ -126,6 +109,8 @@ pub(crate) fn chunk_name(chunk: &Vec<SlotData>) -> String {
     let last = chunk.last().unwrap().0;
     chunk_json_name(first, last)
 }
+
+pub(crate) const CHUNKED_BLOCKS_DIR: &str = "blocks/json_chunked";
 
 pub(crate) fn write_blocks_json_chunk(chunk: &Vec<SlotData>) {
     let file_name = chunk_name(chunk);
@@ -147,7 +132,9 @@ pub(crate) fn write_blocks_json_chunk(chunk: &Vec<SlotData>) {
     }
 }
 
+
 pub(crate) const BLOCK_SAMPLE_DIR: &str = "blocks/json_sample";
+// copy a sample of an existing folder's files
 pub(crate) fn copy_sample<P: AsRef<Path>>(path: P, one_out_of: usize) -> Result<(), std::io::Error> {
     println!("\ncopying 1 out of every {} slot_.json files to {}", one_out_of, BLOCK_SAMPLE_DIR);
     
@@ -161,7 +148,6 @@ pub(crate) fn copy_sample<P: AsRef<Path>>(path: P, one_out_of: usize) -> Result<
     i_range.par_iter().for_each(|i| {
         let src_i = i * one_out_of;
         let src_path = &dir_paths[src_i];
-        //println!("copy to sample:  {:?}", &src_path);
 
         let mut src = File::open(src_path).unwrap();
         let src_str = src_path.to_string_lossy();
@@ -191,6 +177,7 @@ pub(crate) fn timed_copy_sample<P: AsRef<Path>>(path: P, rate_arg: Option<usize>
     println!("file sample copy done, time:  {:3} seconds\n", elapsed.as_secs_f32());
 }
 
+
 fn parse_slot_num(slot_file_name: &str) -> Option<u64> {
     let underscore_split = slot_file_name.split("_");
     let num_with_extension = underscore_split.last()?;
@@ -211,17 +198,11 @@ pub(crate) fn slot_num_from_path(slot_path: &PathBuf) -> Option<u64> {
     }
 }
 
-pub(crate) const CHUNKED_BLOCKS_DIR: &str = "blocks/json_chunked";
 
 #[derive(Debug)]
 pub(crate) struct FileSizeStats {
     pub avg: usize,
     pub count: usize
-}
-
-pub fn test_size_average(dir: &str) {
-    let stats = dir_size_stats(dir).unwrap();
-    println!("files:\n\tcount:{}\taverage: {} kb\n", stats.count, stats.avg / 1024)
 }
 
 pub(crate) fn dir_size_stats<P: AsRef<Path>>(path: P) -> Result<FileSizeStats, std::io::Error> {
