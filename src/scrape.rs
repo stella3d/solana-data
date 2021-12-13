@@ -94,7 +94,6 @@ pub(crate) fn scrape_with_args(cli_args: &CliArguments) {
     match cli_args.rpc.as_ref() {
         Some(rpc) => {
             println!("\nscraping blocks for {} minutes, from RPC node:  {}\n", mins, rpc);
-            thread::sleep(Duration::from_secs(6000));
             scrape::scrape_loop(duration, &rpc);
         },
         None => {
