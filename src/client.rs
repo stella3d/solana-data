@@ -79,11 +79,10 @@ impl SolClient {
     pub fn get_block_details(&mut self, slots: &Vec<Slot>, callback: fn(&(Slot, Option<&EncodedConfirmedBlock>))) -> Slot {
         for s in slots {
             if Path::new(&slot_json_path(*s)).exists() { 
-            println!("SKIP: request slot {}, file exists", s);
+                println!("skip requesting slot {}, file exists", s);
                 continue; 
             }
 
-            print!("requesting slot {}...\t", s);
             let r = self.rpc.get_block_with_encoding(*s, UiTransactionEncoding::Base64);
             match r {
                 Ok(ecb) => {
