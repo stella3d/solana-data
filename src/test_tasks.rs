@@ -48,8 +48,11 @@ pub(crate) fn test_block_loads(chunked_blocks_dir: &str) {
 
 // just see if the average file size code runs
 pub fn test_size_average(dir: &str) {
-    let stats = dir_size_stats(dir).unwrap();
-    println!("files:\n\tcount:{}\taverage: {} kb\n", stats.count, stats.avg / 1024)
+    let stats = match dir_size_stats(dir) {
+        Ok(ss) => ss,
+        Err(e) => return log_err(&e)
+    };
+    println!("files:\n\tcount:{}\taverage: {} kb\n", stats.count, stats.avg / 1024);
 }
 
 pub(crate) fn test_get_block_production(client: &SolClient, logging: bool) {
