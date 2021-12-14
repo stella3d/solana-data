@@ -1,6 +1,6 @@
 use std::{fs, path::{PathBuf}};
 
-use crate::{files::{test_block_loads_buf, CHUNKED_BLOCKS_DIR, dir_file_paths, dir_size_stats}, util::{log_err, timer}, analyze::process_block_stream};
+use crate::{files::{test_block_loads_buf, CHUNKED_BLOCKS_DIR, dir_file_paths, dir_size_stats}, util::{log_err, timer}, analyze::process_block_stream, client::ClientWrapper};
 
 
 // load multiple folders of files, containing the same source data 
@@ -50,4 +50,19 @@ pub(crate) fn test_block_loads(chunked_blocks_dir: &str) {
 pub fn test_size_average(dir: &str) {
     let stats = dir_size_stats(dir).unwrap();
     println!("files:\n\tcount:{}\taverage: {} kb\n", stats.count, stats.avg / 1024)
+}
+
+pub(crate) fn test_get_block_production(client: &ClientWrapper, logging: bool) {
+    if let Ok(prod) = client.get_block_production() {
+        if logging { 
+            let first = prod.range.first_slot;
+            let last = prod.range.last_slot;
+            println!("\nepoch slot range:  {} - {}", first, last);
+
+            prod.by_identity.iter().for_each(|id| {
+                println!("slot leader pubkey:  {}", id.0);
+                println!("     in this epoch:  lead {} slots, produced {} blocks", id.1.0, id.1.1);
+            });
+        }
+    }
 }

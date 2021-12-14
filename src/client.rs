@@ -1,6 +1,6 @@
 use std::{collections::{HashSet}, sync::Arc, path::Path};
 
-use solana_client::{self, rpc_client::RpcClient, client_error::{ClientError}};
+use solana_client::{self, rpc_client::RpcClient, client_error::{ClientError}, rpc_response::RpcBlockProduction};
 use solana_program::{pubkey::Pubkey, clock::Slot};
 use solana_sdk::{transaction::Transaction, account::Account};
 use solana_transaction_status::{EncodedTransactionWithStatusMeta, UiTransactionEncoding, EncodedConfirmedBlock};
@@ -121,6 +121,13 @@ impl ClientWrapper {
 
         *slots.last().unwrap()
     }
+
+    pub fn get_block_production(&self) -> Result<RpcBlockProduction, ClientError> {
+        match self.rpc.get_block_production() {
+            Ok(response) => Ok(response.value),
+            Err(e) => Err(e) 
+        }
+    } 
 }
 
 const DEFAULT_TMP_CAPACITY: usize = 256;

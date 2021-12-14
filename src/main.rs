@@ -1,3 +1,7 @@
+use client::get_client;
+use test_tasks::test_get_block_production;
+use util::log_err;
+
 use crate::{
     cli::*, tasks::*,
     scrape::scrape_with_args, 
@@ -34,6 +38,12 @@ fn main() {
             test_size_average(BLOCKS_DIR),
         COMPARE_BLOCK_LOADS_TASK =>
             if let Some(s) = cli_args.source { load_perf_by_size(&s) },
+        GET_BLOCK_PROD_TASK => {
+            match cli_args.rpc {
+                Some(rpc) => test_get_block_production(&get_client(&rpc), true),
+                None => log_err("CLI parsing should prevent this branch"),
+            }
+        }
         _ => {}
     }
 }
