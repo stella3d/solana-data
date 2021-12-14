@@ -72,11 +72,11 @@ pub fn load_blocks_chunk_json<P: AsRef<Path>>(path: P) -> Option<Vec<SlotData>> 
 
 const SLOT_PREFIX: &str = "slot_";
 pub(crate) fn slot_json_path(slot: u64) -> String {
-    format!("./{}/{}{}.json", BLOCKS_DIR, SLOT_PREFIX, slot)
+    format!("{}{}{}{}.json", BLOCKS_DIR, PATH_SEP, SLOT_PREFIX, slot)
 }
 
 pub(crate) fn slot_file_name(dir: &str, slot: u64, extension: &str) -> String {
-    format!("{}/{}{}{}", dir, SLOT_PREFIX, slot, extension)
+    format!("{}{}{}{}{}", dir, PATH_SEP, SLOT_PREFIX, slot, extension)
 }
 
 
@@ -118,7 +118,7 @@ pub(crate) fn write_blocks_json_chunk(chunk: &Vec<SlotData>) {
 
     match serde_json::to_string(chunk) {
         Ok(data) => {
-            let path_str = format!("{}/{}",CHUNKED_BLOCKS_DIR, &file_name);
+            let path_str = format!("{}{}{}",CHUNKED_BLOCKS_DIR, PATH_SEP, &file_name);
             let path = Path::new(&path_str);
 
             if Path::exists(&path) {
@@ -169,7 +169,7 @@ pub(crate) fn copy_sample<P: AsRef<Path>>(path: P, one_out_of: usize) -> Result<
         let file_name = if let Some(name) = pathbuf_to_fname(&src_path) { name } 
                         else { return };
                         
-        let dest_path = format!("{}/{}", BLOCK_SAMPLE_DIR, file_name);
+        let dest_path = format!("{}{}{}", BLOCK_SAMPLE_DIR, PATH_SEP, file_name);
 
         match File::create(dest_path) {
             Ok(mut dest) => {
