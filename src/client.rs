@@ -20,22 +20,19 @@ pub struct ClientWrapper {
 }
 
 impl ClientWrapper {
-    fn gather_keys<'a>(s: &'a mut ClientWrapper) -> &'a Vec<Pubkey> {
-        let k_set = &mut s.t_key_set;
-        k_set.clear();
-        
-        s.txs.iter().for_each(|tx| {
-            tx.message.account_keys.iter().for_each(|pk| { 
-                k_set.insert(*pk); 
-            });
-        });
+    const TMP_BUFFER_LEN: usize = 256;
 
-        s.t_key_vec.clear();
-        for k in k_set.iter() {
-            s.t_key_vec.push(k.clone());
+    pub fn get (rpc_url: &str) -> ClientWrapper {
+        let mut rpc: &str = rpc_url;
+        if rpc_url.is_empty() { rpc = DEVNET_RPC; }
+    
+        ClientWrapper { 
+            rpc: Arc::new(RpcClient::new(rpc.to_string())), 
+            t_key_set: HashSet::<Pubkey>::with_capacity(Self::TMP_BUFFER_LEN), 
+            t_key_vec: Vec::<Pubkey>::with_capacity(Self::TMP_BUFFER_LEN), 
+            tx_accounts: Vec::<Account>::with_capacity(Self::TMP_BUFFER_LEN),
+            txs: Vec::<Transaction>::with_capacity(Self::TMP_BUFFER_LEN) 
         }
-
-        &s.t_key_vec
     }
 
     pub fn get_accounts(&mut self) -> Option<&Vec<Account>> {
@@ -62,25 +59,10 @@ impl ClientWrapper {
         else { None }
     }
 
-    pub fn all_tx_accounts(&mut self) -> usize 
+    pub fn get_tx_accounts(rpc: &RpcClient, tx: Transaction) -> 
+        Result<Vec<Option<Account>>, ClientError> 
     {
-        let keys = Self::gather_keys(self);
-
-        let mut request_count = keys.len() / 100;
-        if keys.len() % 100 != 0 {
-            request_count += 1;
-        }
-
-        println!("account number: {}", keys.len());
-        println!("request count for all txs: {}", request_count);
-
-        match self.get_accounts() {
-            Some(av) => {
-                //for a in av { println!("\naccount:    {:?}\n", a); }
-                av.len()
-            },
-            None => 0
-        }
+        rpc.get_multiple_accounts(&tx.message.account_keys)
     }
 
     pub fn decode_txs(&mut self, e_txs: Vec<EncodedTransactionWithStatusMeta>) {
@@ -127,25 +109,9 @@ impl ClientWrapper {
             Ok(response) => Ok(response.value),
             Err(e) => Err(e) 
         }
-    } 
-}
-
-const DEFAULT_TMP_CAPACITY: usize = 256;
-
-pub fn get_client (rpc_url: &str) -> ClientWrapper {
-    let mut rpc: &str = rpc_url;
-    if rpc_url.is_empty() {
-        rpc = DEVNET_RPC.clone();
-    }
-
-    ClientWrapper { 
-        rpc: Arc::new(RpcClient::new(rpc.to_string())), 
-        t_key_set: HashSet::<Pubkey>::with_capacity(DEFAULT_TMP_CAPACITY), 
-        t_key_vec: Vec::<Pubkey>::with_capacity(DEFAULT_TMP_CAPACITY), 
-        tx_accounts: Vec::<Account>::with_capacity(DEFAULT_TMP_CAPACITY),
-        txs: Vec::<Transaction>::with_capacity(DEFAULT_TMP_CAPACITY), 
     }
 }
+
 
 pub fn get_tx_accounts(rpc: &RpcClient, tx: Transaction) -> 
     Result<Vec<Option<Account>>, ClientError> 

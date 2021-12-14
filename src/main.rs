@@ -1,13 +1,10 @@
-use client::get_client;
-use test_tasks::test_get_block_production;
-use util::log_err;
-
 use crate::{
     cli::*, tasks::*,
+    client::ClientWrapper, util::log_err,
     scrape::scrape_with_args, 
     input_chunk::chunk_by_size_cli,
     files::{BLOCKS_DIR,  CHUNKED_BLOCKS_DIR, timed_copy_sample},
-    test_tasks::{load_perf_by_size, test_size_average, test_block_loads},
+    test_tasks::{load_perf_by_size, test_size_average, test_block_loads, test_get_block_production},
 };
 
 pub mod client; 
@@ -40,7 +37,7 @@ fn main() {
             if let Some(s) = cli_args.source { load_perf_by_size(&s) },
         GET_BLOCK_PROD_TASK => {
             match cli_args.rpc {
-                Some(rpc) => test_get_block_production(&get_client(&rpc), true),
+                Some(rpc) => test_get_block_production(&ClientWrapper::get(&rpc), true),
                 None => log_err("CLI parsing should prevent this branch"),
             }
         }
