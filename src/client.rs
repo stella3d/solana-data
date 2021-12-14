@@ -104,11 +104,3 @@ impl SolClient {
         }
     }
 }
-
-
-// TODO - put in the impl or delete
-pub fn get_tx_accounts(rpc: &RpcClient, tx: Transaction) -> 
-    Result<Vec<Option<Account>>, ClientError> 
-{
-    rpc.get_multiple_accounts(&tx.message.account_keys)
-}
