@@ -61,7 +61,7 @@ pub(crate) fn test_get_block_production(client: &ClientWrapper, logging: bool) {
 
             prod.by_identity.iter().for_each(|id| {
                 println!("slot leader pubkey:  {}", id.0);
-                println!("     in this epoch:  lead {} slots, produced {} blocks", id.1.0, id.1.1);
+                println!("        this epoch:  lead {} slots, produced {} blocks", id.1.0, id.1.1);
             });
         }
     }
