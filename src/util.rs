@@ -25,6 +25,16 @@ pub(crate) fn do_or_die<F: FnOnce() -> Result<T, E>, T, E: Debug + Display>
         }}
 }
 
+// do_or_die, but without the extra error message
+pub(crate) fn ok_or_die<F: FnOnce() -> Result<T, E>, T, E: Debug + Display>(task: F) -> T {
+    match task() {
+        Ok(output) => output,
+        Err(e) => {
+            log_err(&e);
+            exit(1);
+        }}
+}
+
 // EXECUTION TIMING
 pub struct TimedData<T> {
     pub time: Duration,
