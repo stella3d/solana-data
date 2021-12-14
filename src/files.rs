@@ -75,8 +75,9 @@ pub fn load_blocks_chunk_json<P: AsRef<Path>>(path: P) -> Option<Vec<SlotData>> 
 
 
 const SLOT_PREFIX: &str = "slot_";
-pub(crate) fn slot_json_path(slot: u64) -> String {
-    format!("{}{}{}{}.json", BLOCKS_DIR, PATH_SEP, SLOT_PREFIX, slot)
+pub(crate) fn slot_json_path(slot: u64) -> PathBuf {
+    let p = format!("{}{}{}{}.json", BLOCKS_DIR, PATH_SEP, SLOT_PREFIX, slot);
+    Path::new(&p).to_path_buf()
 }
 
 pub(crate) fn slot_file_name(dir: &str, slot: u64, extension: &str) -> String {
