@@ -92,9 +92,16 @@ impl Default for ScrapeState {
 }
 
 const STATE_FILE: &str = "scrape_state.json";
-
-fn save_state(state: ScrapeState) {
-    fs::write(STATE_FILE, serde_json::to_vec(&state).unwrap()).unwrap();
+// lack of error handling here isn't ideal but it's also not that important
+fn save_state<E: core::fmt::Debug>(state: ScrapeState) {
+    match serde_json::to_vec(&state) {
+        Ok(bytes) => { 
+            if let Err(e) = fs::write(STATE_FILE, bytes) { 
+                log_err(&e); 
+            } 
+        },
+        Err(e) => { log_err(&e) }
+    };
 }
 
 fn load_state() -> Result<ScrapeState, serde_json::Error> {
