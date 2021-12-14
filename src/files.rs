@@ -146,7 +146,11 @@ pub(crate) const BLOCK_SAMPLE_DIR: &str = "blocks/json_sample";
 pub(crate) fn copy_sample<P: AsRef<Path>>(path: P, one_out_of: usize) -> Result<(), std::io::Error> {
     println!("\ncopying 1 out of every {} slot_.json files to {}", one_out_of, BLOCK_SAMPLE_DIR);
     
-    let read_dir = fs::read_dir(path).unwrap();
+    let read_dir = match fs::read_dir(path) {
+        Ok(rd) => rd,
+        Err(e) => { log_err(&e); return Err(e) }
+    };
+
     let dir_paths = dir_file_paths(read_dir);
     let sample_size = dir_paths.len() / one_out_of;
     println!("sample size:  {}", sample_size);
