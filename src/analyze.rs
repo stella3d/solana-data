@@ -1,11 +1,11 @@
-use std::{collections::HashMap, path::{PathBuf}, str::FromStr};
+use std::{collections::HashMap, path::{PathBuf}};
 
 use rayon::iter::{ParallelIterator, IntoParallelRefIterator};
 use solana_program::pubkey::Pubkey;
 use solana_sdk::transaction::Transaction;
 use solana_transaction_status::{EncodedConfirmedBlock, EncodedTransactionWithStatusMeta};
 
-use crate::{files::{write_pubkey_counts, load_blocks_chunk_json}, util::time_run};
+use crate::{files::{write_pubkey_counts, load_blocks_chunk_json}, util::{time_run, log_err}};
 
 
 pub(crate) type PubkeyTxCount = (Pubkey, u32); 
@@ -52,7 +52,7 @@ pub fn decode_txs_map(e_txs: &Vec<EncodedTransactionWithStatusMeta>) -> Vec<Tran
     * run 'each_chunk' on data parsed from each file
     * reduce all the chunks' output to one single value of the same type, 'C'
 */
-pub fn map_reduce_chunk_files<U: Sized + Send, T, C: Send>(
+pub fn map_reduce_chunk_files<U: Sized + Send, T: Send, C: Send>(
     paths: &[PathBuf], 
     load_chunk_file: fn(&PathBuf) -> Option<Vec<(U, T)>>, 
     each_chunk: fn(&[(U, T)]) -> C, 
@@ -61,9 +61,14 @@ pub fn map_reduce_chunk_files<U: Sized + Send, T, C: Send>(
 {
     // in parallel, load & parse each chunk, before running supplied fn on the data
     let sub_results: Vec<C> = paths.par_iter()
-    .map(|chunk_path| {
-        let typed: Vec<(U, T)> = load_chunk_file(chunk_path).unwrap();
-        each_chunk(typed.as_slice())
+    .filter_map(|path| {
+        match load_chunk_file(path) {
+            Some(c) => Some(each_chunk(&c)),
+            None => {
+                log_err(&format!("chunk load failed, path:  {:?}", path));
+                None 
+            }
+        }
     }).collect();
 
     // take all the sub-results, aggregate them into one result of same type
@@ -122,7 +127,7 @@ pub fn find_account_set_stream(block_files: &[PathBuf]) -> PubkeyTxCountMap {
         map_reduce_chunk_files::<u64, EncodedConfirmedBlock, PubkeyTxCountMap>(
             block_files,
             |p| { load_blocks_chunk_json(p) },  
-            find_account_set_tuple,                     // in each chunk, count seen public keys
+            find_account_set_tuple,                         // in each chunk, count seen public keys
             reduce_count_map)                           // aggregate occurence counts into one map
     });
 
