@@ -1,4 +1,4 @@
-use std::{time::Duration, fs};
+use std::{time::Duration, fs, cmp::max};
 use serde::{Serialize, Deserialize};
 
 use crate::{util::{log_err, loop_task, minutes_duration}, client::SolClient, files, cli::CliArguments, scrape};
@@ -28,21 +28,16 @@ fn scrape_blocks(previous_state: ScrapeState, rpc_url: &str) -> Option<ScrapeSta
     let slot_res= client.rpc.get_slot();
     let slot = match slot_res {
         Ok(s) => s,
-        Err(e) => { 
-            eprintln!("{}", e);
-            0u64 
-        }
+        Err(e) => { log_err(&e); return None }
     };
-    if slot <= 0 { return None; }
 
-    let start = previous_state.last_slot;
-    let slots_result = client.rpc.get_blocks_with_limit(start, 1024);
-    let slots = match slots_result {
+    let start = max(previous_state.last_slot, slot - 512);
+    let slots = match client.rpc.get_blocks_with_limit(start, 1024) {
         Ok(s) => s,
-        Err(_) => vec![],
+        Err(e) => { log_err(&e); return None },
     };
 
-    println!("\n{} slots to request: {}-{}\n", slots.len(), slots.first().unwrap(), slots.last().unwrap());
+    println!("\nslots to request:  {}\n", slots.len());
 
     let last = client.get_block_details(&slots,
         |(slot, ecb)| {
