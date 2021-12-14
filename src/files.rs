@@ -82,7 +82,7 @@ pub(crate) fn slot_file_name(dir: &str, slot: u64, extension: &str) -> String {
 
 const TX_COUNT_PRE: &str = "key_tx_count_";
 // TODO - should i write a trait for "save to file" ?
-pub(crate) fn write_pubkey_counts(dir: String, counts: &CountedTxs) {
+pub(crate) fn write_pubkey_counts(dir: &str, counts: &CountedTxs) {
     let map = counts.data;
     let path = format!("{}{}{}.json", dir, TX_COUNT_PRE, counts.total);
     match serde_json::to_string(&map) {

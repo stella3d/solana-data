@@ -26,10 +26,8 @@ pub fn process_block_stream(block_files: &[PathBuf]) {
     accts_vec.sort_by(|e, other| e.1.cmp(&other.1));
 
     println!("writing account tx counts in 'blocks/'");
-    write_pubkey_counts(String::from_str("blocks/").unwrap(),
-        &CountedTxs { 
-            total: accts_vec.len() as u32, data: &accts_vec 
-        });
+    let key_counts = &CountedTxs { total: accts_vec.len() as u32, data: &accts_vec };
+    write_pubkey_counts("blocks/", key_counts);
         
     println!("\nunique public keys counted: {}\n", acct_set.len());
 
