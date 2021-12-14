@@ -1,33 +1,31 @@
-use std::{fs, path::{PathBuf}};
+use std::{fs::{self, read_dir}, path::{PathBuf}};
 
-use crate::{files::{test_block_loads_buf, CHUNKED_BLOCKS_DIR, dir_file_paths, dir_size_stats}, util::{log_err, timer}, analyze::process_block_stream, client::ClientWrapper};
+use crate::{files::{test_block_loads_buf, CHUNKED_BLOCKS_DIR, dir_file_paths, dir_size_stats}, util::{log_err, timer, ok_or_die}, analyze::process_block_stream, client::ClientWrapper};
 
 
 // load multiple folders of files, containing the same source data 
 // grouped into different size chunks, compare how performance varies with size
 pub(crate) fn load_perf_by_size(chunked_data_dir: &str) {
-    match fs::read_dir(&chunked_data_dir) {
-        Ok(rd) => {
-            rd.into_iter().for_each(|dir_entry| {
-                match dir_entry {
-                    Ok(de) => {
-                        let path: PathBuf = de.path();
-                        let path_str = path.to_string_lossy();
-                        if !path.exists() {
-                            eprintln!("directory {} not found!", path_str);
-                        }
-                        println!("running load test on chunked data dir:\n\t{}\n", path_str);
-                        let elapsed = timer(|| { 
-                            test_block_loads_buf(&path); 
-                        });
-                        println!("LOAD TIME:  {:3} seconds\n", elapsed.as_secs_f32());
-                    },
-                    Err(e) => log_err(&e),
+    let dir = ok_or_die(|| read_dir(chunked_data_dir));
+
+    dir.into_iter().for_each(|dir_entry| {
+        match dir_entry {
+            Ok(de) => {
+                let path: PathBuf = de.path();
+                let path_str = path.to_string_lossy();
+                if !path.exists() {
+                    eprintln!("directory {} not found!", path_str);
                 }
-            });
-        },
-        Err(e) => log_err(&e),
-    };
+
+                println!("loading data dir:  {}", path_str);
+                let elapsed = timer(|| { 
+                    test_block_loads_buf(&path); 
+                });
+                println!("finished load & process in {:3} seconds\n", elapsed.as_secs_f32());
+            },
+            Err(e) => log_err(&e),
+        }
+    });
 }
 
 pub(crate) fn test_block_loads(chunked_blocks_dir: &str) {
@@ -62,5 +60,7 @@ pub(crate) fn test_get_block_production(client: &ClientWrapper, logging: bool) {
                 println!("        this epoch:  lead {} slots, produced {} blocks", id.1.0, id.1.1);
             });
         }
+
+        // TODO - more here
     }
 }
