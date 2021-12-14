@@ -84,18 +84,18 @@ Use one of these names as the `--task` / `-t` arg to run it.
     >Requires _.json_ files from **`scrape_blocks`** task to be in _`blocks/json/`_
 
     #### Arguments:
-    * **`--chunk-mb`**
+    * **`--mb`**
         
-        The max size of the input data (in megabytes) grouped into 1 output chunk / file.
+        The max size (in megabytes) of the input data grouped into each output chunk.
 
         ###### Examples
         * Create ~2MB chunks.
             ```
-            sol-data -t chunk_blocks --chunk-mb 2;
+            sol-data -t chunk_blocks --mb 2;
             ```
         * Create ~16MB chunks.
             ```
-            sol-data -t chunk_blocks --cmb 16;
+            sol-data -t chunk_blocks --mb 16;
             ```
 * ### **count_txs**
     Count how many times each public key is seen in the given blocks' transactions.
@@ -150,7 +150,7 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-        --chunk-mb <chunk-mb>          size (megabytes) for chunked collections of input data, default: 2
+        --mb <mb>                      size (in megabytes) of chunked collections of input data, default: 2
     -m, --minutes <minutes>            How long to run the task, in minutes
     -r, --rpc <rpc>                    URL of the Solana RPC node to use, or: 1 of 'dev','test','main'
         --sample-rate <sample-rate>    number of source files for each 1 copied to new sample, default: 50
