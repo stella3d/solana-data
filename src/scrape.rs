@@ -1,7 +1,7 @@
 use std::{cmp::max, time::Duration, fs};
 use serde::{Serialize, Deserialize};
 
-use crate::{util::{log_err, loop_task, minutes_duration}, client::ClientWrapper, files, cli::CliArguments, scrape};
+use crate::{util::{log_err, loop_task, minutes_duration}, client::SolClient, files, cli::CliArguments, scrape};
 
 
 pub(crate) fn do_scrape(rpc_url: &str) {
@@ -23,7 +23,7 @@ pub(crate) fn do_scrape(rpc_url: &str) {
 // request data of recent blocks from an RPC node, and save them to disk
 fn scrape_blocks(previous_state: ScrapeState, rpc_url: &str) -> Option<ScrapeState> {
     println!("using rpc url:  {}\n", rpc_url);
-    let mut client = ClientWrapper::get(rpc_url);
+    let mut client = SolClient::get(rpc_url);
 
     let slot_res= client.rpc.get_slot();
     let slot = match slot_res {

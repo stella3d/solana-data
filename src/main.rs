@@ -1,6 +1,6 @@
 use crate::{
     cli::*, tasks::*,
-    client::ClientWrapper, util::log_err,
+    client::SolClient, util::log_err,
     scrape::scrape_with_args, 
     input_chunk::chunk_by_size_cli,
     files::{BLOCKS_DIR,  CHUNKED_BLOCKS_DIR, timed_copy_sample},
@@ -37,7 +37,7 @@ fn main() {
             if let Some(s) = cli_args.source { load_perf_by_size(&s) },
         GET_BLOCK_PROD_TASK => {
             match cli_args.rpc {
-                Some(rpc) => test_get_block_production(&ClientWrapper::get(&rpc), true),
+                Some(rpc) => test_get_block_production(&SolClient::get(&rpc), true),
                 None => log_err("CLI parsing should prevent this branch"),
             }
         }

@@ -9,7 +9,7 @@ use crate::{files::{slot_json_path}, networks::DEVNET_RPC};
 
 
 #[derive(Clone)]
-pub struct ClientWrapper {
+pub struct SolClient {
     pub rpc: Arc<RpcClient>,
 
     pub t_key_set: HashSet<Pubkey>,
@@ -19,14 +19,14 @@ pub struct ClientWrapper {
     pub txs: Vec::<Transaction>,
 }
 
-impl ClientWrapper {
+impl SolClient {
     const TMP_BUFFER_LEN: usize = 256;
 
-    pub fn get (rpc_url: &str) -> ClientWrapper {
+    pub fn get (rpc_url: &str) -> SolClient {
         let mut rpc: &str = rpc_url;
         if rpc_url.is_empty() { rpc = DEVNET_RPC; }
     
-        ClientWrapper { 
+        SolClient { 
             rpc: Arc::new(RpcClient::new(rpc.to_string())), 
             t_key_set: HashSet::<Pubkey>::with_capacity(Self::TMP_BUFFER_LEN), 
             t_key_vec: Vec::<Pubkey>::with_capacity(Self::TMP_BUFFER_LEN), 
