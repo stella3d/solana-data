@@ -5,7 +5,7 @@ use solana_program::{pubkey::Pubkey, clock::Slot};
 use solana_sdk::{transaction::Transaction, account::Account};
 use solana_transaction_status::{EncodedTransactionWithStatusMeta, UiTransactionEncoding, EncodedConfirmedBlock};
 
-use crate::{files::{slot_json_path}, networks::DEVNET_RPC};
+use crate::{files::{slot_json_path}, networks::DEVNET_RPC, util::log_err};
 
 
 // TODO - basic comments explaining why the rpc wrapper etc
@@ -79,19 +79,14 @@ impl SolClient {
     pub fn get_block_details(&mut self, slots: &Vec<Slot>, callback: fn(&(Slot, Option<&EncodedConfirmedBlock>))) -> Slot {
         for s in slots {
             if Path::new(&slot_json_path(*s)).exists() { 
-                println!("skip requesting slot {}, file exists", s);
+                println!("skipping request for slot {}: file exists", s);
                 continue; 
             }
-
-            let r = self.rpc.get_block_with_encoding(*s, UiTransactionEncoding::Base64);
-            match r {
+            match self.rpc.get_block_with_encoding(*s, UiTransactionEncoding::Base64) {
                 Ok(ecb) => {
-                    let opt = Some(&ecb);
-                    callback(&(*s, opt));
+                    callback(& (*s, Some(&ecb)));
                 },
-                Err(e) => {
-                    eprintln!("{}", e);
-                },
+                Err(e) => log_err(&e),
             }
         }
 
