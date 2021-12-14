@@ -3,7 +3,7 @@ use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use solana_transaction_status::EncodedConfirmedBlock;
 use serde_json;
 
-use crate::{util::{log_err_none, log_err, timer}, analyze::{process_block_stream, CountedTxs}};
+use crate::{util::{log_err_none, log_err, timer, PATH_SEP}, analyze::{process_block_stream, CountedTxs}};
 
 pub fn test_block_loads_buf(chunked_blocks_dir: &PathBuf) {
     let paths = dir_file_paths(fs::read_dir(chunked_blocks_dir).unwrap());
@@ -118,19 +118,26 @@ pub(crate) fn write_blocks_json_chunk(chunk: &Vec<SlotData>) {
 
     match serde_json::to_string(chunk) {
         Ok(data) => {
-            let f_str = &("/".to_string() + &file_name);
-            let p_str = format!("{}{}",CHUNKED_BLOCKS_DIR, f_str);
-            let p = Path::new(&p_str);
+            let path_str = format!("{}/{}",CHUNKED_BLOCKS_DIR, &file_name);
+            let path = Path::new(&path_str);
 
-            if Path::exists(&p) {
+            if Path::exists(&path) {
                 println!("file {} already present, not overriding", &file_name);
             } else {
                 //print!("writing block chunk file:  {}\n", p.to_str().unwrap());
-                let _ = fs::write(p, data);
+                let _ = fs::write(path, data);
             }
         },
         Err(e) => log_err(&e),
     }
+}
+
+// TODO - make this a From or To trait ?
+fn pathbuf_to_fname(src_path: &PathBuf) -> Option<String> {
+    let src_str = src_path.to_string_lossy();
+    let src_split = src_str.split(PATH_SEP);
+    if let Some(fname) = src_split.last() { Some(fname.to_owned()) }
+    else { None }
 }
 
 
@@ -151,10 +158,10 @@ pub(crate) fn copy_sample<P: AsRef<Path>>(path: P, one_out_of: usize) -> Result<
         let src_path = &dir_paths[src_i];
 
         let mut src = File::open(src_path).unwrap();
-        let src_str = src_path.to_string_lossy();
-        let src_split = src_str.split("\\");
-        let last_split = src_split.last().unwrap();
-        let dest_path = format!("{}/{}", BLOCK_SAMPLE_DIR, last_split);
+        let file_name = if let Some(name) = pathbuf_to_fname(&src_path) { name } 
+                        else { return };
+                        
+        let dest_path = format!("{}/{}", BLOCK_SAMPLE_DIR, file_name);
 
         match File::create(dest_path) {
             Ok(mut dest) => {
