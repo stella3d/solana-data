@@ -77,12 +77,6 @@ impl SolClient {
     }
 
     pub fn get_block_details(&mut self, slots: &Vec<Slot>, callback: fn(&(Slot, Option<&EncodedConfirmedBlock>))) -> Slot {
-        let len = (*slots).len();
-        if len > 4096 || len < 1 {
-            println!("only ranges 1-4096 in length supported right now, input length:  {}", len);
-            return 0;
-        }
-
         for s in slots {
             if Path::new(&slot_json_path(*s)).exists() { 
             println!("SKIP: request slot {}, file exists", s);
