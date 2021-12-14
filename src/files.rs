@@ -157,7 +157,11 @@ pub(crate) fn copy_sample<P: AsRef<Path>>(path: P, one_out_of: usize) -> Result<
         let src_i = i * one_out_of;
         let src_path = &dir_paths[src_i];
 
-        let mut src = File::open(src_path).unwrap();
+        let mut src = match File::open(src_path) {
+            Ok(f) => f,
+            Err(e) => { return log_err(&e); }       // don't stop if 1 fails, just log
+        };
+
         let file_name = if let Some(name) = pathbuf_to_fname(&src_path) { name } 
                         else { return };
                         
