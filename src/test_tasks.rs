@@ -1,6 +1,10 @@
 use std::{fs::{self, read_dir}, path::{PathBuf}};
 
-use crate::{files::{test_block_loads_buf, CHUNKED_BLOCKS_DIR, dir_file_paths, dir_size_stats}, util::{log_err, timer, ok_or_die}, analyze::process_block_stream, client::ClientWrapper};
+use crate::{
+    analyze::process_block_stream, client::SolClient,
+    files::{test_block_loads_buf, CHUNKED_BLOCKS_DIR, dir_file_paths, dir_size_stats}, 
+    util::{log_err, timer, ok_or_die} 
+};
 
 
 // load multiple folders of files, containing the same source data 
@@ -48,7 +52,7 @@ pub fn test_size_average(dir: &str) {
     println!("files:\n\tcount:{}\taverage: {} kb\n", stats.count, stats.avg / 1024)
 }
 
-pub(crate) fn test_get_block_production(client: &ClientWrapper, logging: bool) {
+pub(crate) fn test_get_block_production(client: &SolClient, logging: bool) {
     if let Ok(prod) = client.get_block_production() {
         if logging { 
             let first = prod.range.first_slot;
@@ -60,7 +64,6 @@ pub(crate) fn test_get_block_production(client: &ClientWrapper, logging: bool) {
                 println!("        this epoch:  lead {} slots, produced {} blocks", id.1.0, id.1.1);
             });
         }
-
         // TODO - more here
     }
 }
