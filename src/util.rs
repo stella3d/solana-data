@@ -1,6 +1,7 @@
 use std::{time::{Duration, Instant}, fmt::{Debug, Display}, process::exit};
 
 
+pub(crate) const PATH_SEP: char = std::path::MAIN_SEPARATOR;
 pub(crate) const MEGABYTE: usize = 1024 * 1024;
 
 pub fn loop_task<F: Fn() -> ()>(total_time: Duration, loop_fn: F) {
