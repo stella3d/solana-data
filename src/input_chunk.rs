@@ -4,7 +4,7 @@ use rayon::{iter::{IntoParallelRefIterator, ParallelIterator}, current_num_threa
 
 use crate::{
     cli::CliArguments,
-    util::{timer, MEGABYTE, do_or_die}, 
+    util::{timer, MEGABYTE, do_or_die, log_err}, 
     files::{
         BLOCKS_DIR, SlotData, dir_file_paths, get_file_size, 
         slot_num_from_path, load_block_json, write_blocks_json_chunk
@@ -13,7 +13,6 @@ use crate::{
 
 
 type SizedPath<'a> = (&'a PathBuf, usize);      // file's path + size in bytes
-
 
 // given a dir of many single-block .json files, group the inputs sequentially,  
 // each group sized as close to the limit as possible.
@@ -69,8 +68,14 @@ fn sized_path_chunks<'a>(inputs: &'a [SizedPath], max_bytes: usize) -> Vec<Vec<&
     let mut chunk_outputs = Vec::<Vec<&PathBuf>>::new();
     let mut data = Vec::<&PathBuf>::new();
 
-    // TODO - handle instead of unwrap ? not sure how last() can fail
-    let last_input = inputs.last().unwrap();
+    let pb: PathBuf = Default::default();
+    let last_input = match inputs.last() {
+        Some(&last) => last,
+        None => {
+            log_err("inputs.last() was None, shouldn't be - in sized_path_chunks()");
+            (&pb, 0 as usize)
+        }
+    };
     
     let mut size_count: usize = 0;
     inputs.iter().for_each(|sized_path| {
