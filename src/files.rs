@@ -105,7 +105,7 @@ pub(crate) fn chunk_json_name(first: u64, last: u64) -> String {
 
 pub(crate) fn chunk_name(chunk: &Vec<SlotData>) -> String {
     if chunk.is_empty() { return "EMPTY".to_string() }
-    // unwrap only panics is chunk is empty, so this should be safe
+    // unwrap only panics if chunk is empty, so this should be safe
     let first= chunk.first().unwrap().0;
     let last = chunk.last().unwrap().0;
     chunk_json_name(first, last)
