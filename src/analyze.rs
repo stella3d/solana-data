@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::{PathBuf}};
+use std::{collections::{HashMap, hash_map::{Entry}}, path::{PathBuf}};
 
 use rayon::iter::{ParallelIterator, IntoParallelRefIterator};
 use solana_program::pubkey::Pubkey;
@@ -77,10 +77,10 @@ pub fn map_reduce_chunk_files<U: Sized + Send, T: Send, C: Send>(
 
 fn add_or_increment<T: Copy + Eq + std::hash::Hash>(key: T, hm: &mut HashMap<T, u32>) {
     match hm.entry(key) {
-        std::collections::hash_map::Entry::Occupied(mut tx_count) => {
+        Entry::Occupied(mut tx_count) => {
             tx_count.insert(tx_count.get() + 1);
         },
-        std::collections::hash_map::Entry::Vacant(_) => { hm.insert(key, 1); },
+        Entry::Vacant(_) => { hm.insert(key, 1); },
     };
 }
 
@@ -110,10 +110,10 @@ fn reduce_count_chunk(chunk: &[PubkeyTxCountMap]) -> PubkeyTxCountMap {
             let pk = *entry.0;
             let sub_count = *entry.1;
             match chunk_map.entry(pk) {
-                std::collections::hash_map::Entry::Occupied(mut tx_count) => {
+                Entry::Occupied(mut tx_count) => {
                     tx_count.insert(tx_count.get() + sub_count);
                 },
-                std::collections::hash_map::Entry::Vacant(_) => { chunk_map.insert(pk, sub_count); },
+                Entry::Vacant(_) => { chunk_map.insert(pk, sub_count); },
             };
         });
     });
