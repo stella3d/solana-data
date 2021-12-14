@@ -1,4 +1,4 @@
-use std::{fs::{self, ReadDir, File}, path::{Path, PathBuf}, string::String, io};
+use std::{fs::{self, ReadDir, File, read_dir}, path::{Path, PathBuf}, string::String, io};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use solana_transaction_status::EncodedConfirmedBlock;
 use serde_json;
@@ -6,7 +6,11 @@ use serde_json;
 use crate::{util::{log_err_none, log_err, timer, PATH_SEP}, analyze::{process_block_stream, CountedTxs}};
 
 pub fn test_block_loads_buf(chunked_blocks_dir: &PathBuf) {
-    let paths = dir_file_paths(fs::read_dir(chunked_blocks_dir).unwrap());
+    let dir = match read_dir(chunked_blocks_dir) {
+        Ok(rd) => rd,
+        Err(e) => return log_err(&e),
+    };
+    let paths = dir_file_paths(dir);
     process_block_stream(paths.as_slice());
 }
 
@@ -105,7 +109,7 @@ pub(crate) fn chunk_json_name(first: u64, last: u64) -> String {
 
 pub(crate) fn chunk_name(chunk: &Vec<SlotData>) -> String {
     if chunk.is_empty() { return "EMPTY".to_string() }
-    // unwrap only panics if chunk is empty, so this should be safe
+    // first() / last() only return None if chunk is empty, unwrap() be safe
     let first= chunk.first().unwrap().0;
     let last = chunk.last().unwrap().0;
     chunk_json_name(first, last)
@@ -222,8 +226,11 @@ pub(crate) struct FileSizeStats {
 }
 
 pub(crate) fn dir_size_stats<P: AsRef<Path>>(path: P) -> Result<FileSizeStats, std::io::Error> {
-    let rd = fs::read_dir(path).unwrap();
-    let file_paths = dir_file_paths(rd);
+    let dir = match fs::read_dir(path) {
+        Ok(rd) => rd,
+        Err(e) => return Err(e),
+    };
+    let file_paths = dir_file_paths(dir);
     let count = file_paths.len();
 
     let size_sum: usize = file_paths.par_iter().map(get_file_size).sum();
