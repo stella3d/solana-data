@@ -8,6 +8,7 @@ use solana_transaction_status::{EncodedTransactionWithStatusMeta, UiTransactionE
 use crate::{files::{slot_json_path}, networks::DEVNET_RPC};
 
 
+// TODO - basic comments explaining why the rpc wrapper etc
 #[derive(Clone)]
 pub struct SolClient {
     pub rpc: Arc<RpcClient>,
@@ -113,6 +114,7 @@ impl SolClient {
 }
 
 
+// TODO - put in the impl or delete
 pub fn get_tx_accounts(rpc: &RpcClient, tx: Transaction) -> 
     Result<Vec<Option<Account>>, ClientError> 
 {
