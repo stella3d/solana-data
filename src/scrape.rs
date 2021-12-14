@@ -1,4 +1,4 @@
-use std::{cmp::max, time::Duration, fs};
+use std::{time::Duration, fs};
 use serde::{Serialize, Deserialize};
 
 use crate::{util::{log_err, loop_task, minutes_duration}, client::SolClient, files, cli::CliArguments, scrape};
@@ -35,10 +35,8 @@ fn scrape_blocks(previous_state: ScrapeState, rpc_url: &str) -> Option<ScrapeSta
     };
     if slot <= 0 { return None; }
 
-    let backlog_limit: usize = 1024;
-    let slot_count = max(slot - previous_state.last_slot, backlog_limit as u64);
-
-    let slots_result = client.rpc.get_blocks_with_limit(slot_count, backlog_limit);
+    let start = previous_state.last_slot;
+    let slots_result = client.rpc.get_blocks_with_limit(start, 1024);
     let slots = match slots_result {
         Ok(s) => s,
         Err(_) => vec![],
