@@ -76,7 +76,11 @@ impl SolClient {
         });
     }
 
-    pub fn get_block_details(&mut self, slots: &Vec<Slot>, callback: fn(&(Slot, Option<&EncodedConfirmedBlock>))) -> Slot {
+    pub fn get_block_details(&mut self,
+        slots: &Vec<Slot>,
+        callback: fn(&(Slot, Option<&EncodedConfirmedBlock>)))
+        -> Slot 
+    {
         for s in slots {
             if Path::new(&slot_json_path(*s)).exists() { 
                 println!("skipping request for slot {}: file exists", s);
