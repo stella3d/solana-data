@@ -6,8 +6,6 @@ use crate::{files::{test_block_loads_buf, CHUNKED_BLOCKS_DIR, dir_file_paths, di
 // load multiple folders of files, containing the same source data 
 // grouped into different size chunks, compare how performance varies with size
 pub(crate) fn load_perf_by_size(chunked_data_dir: &str) {
-    println!("\nstart load test on data dir:\n\t{}", chunked_data_dir);
-
     match fs::read_dir(&chunked_data_dir) {
         Ok(rd) => {
             rd.into_iter().for_each(|dir_entry| {
