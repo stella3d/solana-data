@@ -87,14 +87,16 @@ impl SolClient {
                 continue; 
             }
             match self.rpc.get_block_with_encoding(*s, UiTransactionEncoding::Base64) {
-                Ok(ecb) => {
-                    callback(& (*s, Some(&ecb)));
+                Ok(ecb) => { 
+                    callback(&(*s, Some(&ecb))) 
                 },
                 Err(e) => log_err(&e),
             }
         }
-
-        *slots.last().unwrap()
+        match slots.last() {
+            Some(last) => *last,
+            None => { log_err("'slots' arg to get_block_details() is empty!"); 0 }
+        }
     }
 
     pub fn get_block_production(&self) -> Result<RpcBlockProduction, ClientError> {
