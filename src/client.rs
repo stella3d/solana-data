@@ -1,6 +1,6 @@
 use std::{collections::{HashSet}, sync::Arc, path::Path};
 
-use solana_client::{self, rpc_client::RpcClient, client_error::{ClientError}, rpc_response::RpcBlockProduction, pubsub_client::{SlotsSubscription, PubsubClientError, self, PubsubClient, LogsSubscription}, rpc_config::{RpcTransactionLogsFilter, RpcTransactionLogsConfig}};
+use solana_client::{self, rpc_client::RpcClient, client_error::{ClientError}, rpc_response::RpcBlockProduction, pubsub_client::{SlotsSubscription, PubsubClientError, self, PubsubClient, LogsSubscription, PubsubAccountClientSubscription, AccountSubscription}, rpc_config::{RpcTransactionLogsFilter, RpcTransactionLogsConfig, RpcAccountInfoConfig}};
 use solana_program::{pubkey::Pubkey, clock::Slot};
 use solana_sdk::{transaction::Transaction, account::Account};
 use solana_transaction_status::{EncodedTransactionWithStatusMeta, UiTransactionEncoding, EncodedConfirmedBlock};
@@ -113,6 +113,12 @@ impl SolClient {
     }
 
     // subscription related methods after this point
+
+    pub fn account_subscribe(&self, pubkey: &Pubkey, config: Option<RpcAccountInfoConfig>) 
+        -> Result<AccountSubscription, PubsubClientError> 
+    {
+        PubsubClient::account_subscribe(&self.rpc_url, pubkey, config)
+    }
 
     pub fn slot_subscribe(&self) -> Result<SlotsSubscription, PubsubClientError> {
         PubsubClient::slot_subscribe(&self.rpc_url)
