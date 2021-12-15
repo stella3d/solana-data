@@ -1,6 +1,6 @@
 use std::{collections::{HashSet}, sync::Arc, path::Path};
 
-use solana_client::{self, rpc_client::RpcClient, client_error::{ClientError}, rpc_response::RpcBlockProduction};
+use solana_client::{self, rpc_client::RpcClient, client_error::{ClientError}, rpc_response::RpcBlockProduction, pubsub_client::{SlotsSubscription, PubsubClientError, self, PubsubClient}};
 use solana_program::{pubkey::Pubkey, clock::Slot};
 use solana_sdk::{transaction::Transaction, account::Account};
 use solana_transaction_status::{EncodedTransactionWithStatusMeta, UiTransactionEncoding, EncodedConfirmedBlock};
@@ -9,9 +9,11 @@ use crate::{files::{slot_json_path}, networks::DEVNET_RPC, util::log_err};
 
 
 // TODO - basic comments explaining why the rpc wrapper etc
-#[derive(Clone)]
 pub struct SolClient {
     pub rpc: Arc<RpcClient>,
+    pub rpc_url: String,
+
+    slots_sub: Option<SlotsSubscription>,
 
     pub t_key_set: HashSet<Pubkey>,
     pub t_key_vec: Vec<Pubkey>,
@@ -26,9 +28,13 @@ impl SolClient {
     pub fn get (rpc_url: &str) -> SolClient {
         let mut rpc: &str = rpc_url;
         if rpc_url.is_empty() { rpc = DEVNET_RPC; }
+        let rpc_str = rpc.to_string();
+        let rpc_clone = rpc_str.clone();
     
         SolClient { 
-            rpc: Arc::new(RpcClient::new(rpc.to_string())), 
+            rpc: Arc::new(RpcClient::new(rpc_str)),
+            rpc_url: rpc_clone,
+            slots_sub: None,
             t_key_set: HashSet::<Pubkey>::with_capacity(Self::TMP_BUFFER_LEN), 
             t_key_vec: Vec::<Pubkey>::with_capacity(Self::TMP_BUFFER_LEN), 
             tx_accounts: Vec::<Account>::with_capacity(Self::TMP_BUFFER_LEN),
@@ -104,5 +110,11 @@ impl SolClient {
             Ok(response) => Ok(response.value),
             Err(e) => Err(e) 
         }
+    }
+
+    // subscription related methods after this point
+
+    pub fn slot_subscribe(&self) -> Result<SlotsSubscription, PubsubClientError> {
+        PubsubClient::slot_subscribe(&self.rpc_url)
     }
 }
