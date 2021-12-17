@@ -1,3 +1,5 @@
+use test_tasks::test_basic_subscriptions;
+
 use crate::{
     cli::*, tasks::*,
     client::SolClient, util::log_err,
@@ -20,6 +22,8 @@ mod input_chunk;
 
 fn main() {
     let cli_args = get_cli_args();
+
+    println!("{}", cli_args.rpc.clone().unwrap_or_default());
     
     // route to various functionality based on the --task arg
     match cli_args.task.as_str() {
@@ -40,7 +44,12 @@ fn main() {
                 Some(rpc) => test_get_block_production(&SolClient::get(&rpc), true),
                 None => log_err("CLI parsing should prevent this branch"),
             }
-        }
+        },
+        SUB_BASIC_TASK => {
+            let r_url = &cli_args.rpc.unwrap();
+            let mut client = SolClient::get(&r_url);
+            test_basic_subscriptions(&mut client);
+        },
         _ => {}
     }
 }

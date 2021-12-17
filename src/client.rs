@@ -1,4 +1,4 @@
-use std::{collections::{HashSet}, sync::Arc, path::Path};
+use std::{collections::{HashSet}, sync::Arc, path::Path, ops::Deref};
 
 use solana_client::{self, rpc_client::RpcClient, client_error::{ClientError}, rpc_response::RpcBlockProduction, pubsub_client::{SlotsSubscription, PubsubClientError, self, PubsubClient, LogsSubscription, PubsubAccountClientSubscription, AccountSubscription}, rpc_config::{RpcTransactionLogsFilter, RpcTransactionLogsConfig, RpcAccountInfoConfig}};
 use solana_program::{pubkey::Pubkey, clock::Slot};
@@ -12,8 +12,11 @@ use crate::{files::{slot_json_path}, networks::DEVNET_RPC, util::log_err};
 pub struct SolClient {
     pub rpc: Arc<RpcClient>,
     pub rpc_url: String,
+    pub ws_url: String,
 
     slots_sub: Option<SlotsSubscription>,
+    acct_sub: Option<AccountSubscription>,
+    logs_sub: Option<LogsSubscription>,
 
     pub t_key_set: HashSet<Pubkey>,
     pub t_key_vec: Vec<Pubkey>,
@@ -29,12 +32,14 @@ impl SolClient {
         let mut rpc: &str = rpc_url;
         if rpc_url.is_empty() { rpc = DEVNET_RPC; }
         let rpc_str = rpc.to_string();
-        let rpc_clone = rpc_str.clone();
-    
+
         SolClient { 
-            rpc: Arc::new(RpcClient::new(rpc_str)),
-            rpc_url: rpc_clone,
+            rpc: Arc::new(RpcClient::new((&rpc_str).clone())),
+            rpc_url: (&rpc_str).clone(),
+            ws_url: (&rpc_str).clone().replace("https://", "ws://"),
             slots_sub: None,
+            acct_sub: None,
+            logs_sub: None,
             t_key_set: HashSet::<Pubkey>::with_capacity(Self::TMP_BUFFER_LEN), 
             t_key_vec: Vec::<Pubkey>::with_capacity(Self::TMP_BUFFER_LEN), 
             tx_accounts: Vec::<Account>::with_capacity(Self::TMP_BUFFER_LEN),
@@ -117,16 +122,58 @@ impl SolClient {
     pub fn account_subscribe(&self, pubkey: &Pubkey, config: Option<RpcAccountInfoConfig>) 
         -> Result<AccountSubscription, PubsubClientError> 
     {
-        PubsubClient::account_subscribe(&self.rpc_url, pubkey, config)
+        PubsubClient::account_subscribe(&self.ws_url, pubkey, config)
     }
 
-    pub fn slot_subscribe(&self) -> Result<SlotsSubscription, PubsubClientError> {
-        PubsubClient::slot_subscribe(&self.rpc_url)
+    pub fn slot_subscribe(&mut self) -> Result<(), PubsubClientError> {
+        match PubsubClient::slot_subscribe(&self.ws_url) {
+            Ok(sub) => {
+                self.slots_sub = Some(sub);
+                Ok(())
+            },
+            Err(e) => Err(e),
+        }
     }
 
-    pub fn logs_subscribe(&self, filter: RpcTransactionLogsFilter, config: RpcTransactionLogsConfig) 
-        -> Result<LogsSubscription, PubsubClientError> 
+    pub fn logs_subscribe(&mut self, filter: RpcTransactionLogsFilter, config: RpcTransactionLogsConfig) 
+        -> Result<(), PubsubClientError> 
     {
-        PubsubClient::logs_subscribe(&self.rpc_url, filter, config)
+        match PubsubClient::logs_subscribe(&self.ws_url, filter, config) {
+            Ok(sub) => {
+                self.logs_sub = Some(sub);
+                Ok(())
+            },
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn try_recv_all(&self) {
+        match &self.slots_sub {
+            Some(s) => {
+                match s.1.try_recv() {
+                    Ok(slot) => { println!("slot:\n{:?}", slot) },
+                    Err(_) => {},
+                }
+            },
+            None => {},
+        };
+        match &self.logs_sub {
+            Some(s) => {
+                match s.1.try_recv() {
+                    Ok(r) => { println!("log:\n{:?}\n", r.value) },
+                    Err(_) => {},
+                }
+            },
+            None => {},
+        };
+        match &self.acct_sub {
+            Some(s) => {
+                match s.1.try_recv() {
+                    Ok(r) => { println!("account:\n{:?}", r.value) },
+                    Err(_) => {},
+                }
+            },
+            None => {},
+        };
     }
 }

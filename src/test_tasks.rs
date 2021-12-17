@@ -1,4 +1,7 @@
-use std::{fs::{self, read_dir}, path::{PathBuf}};
+use std::{fs::{self, read_dir}, path::{PathBuf}, time::{Instant, Duration}, thread};
+
+use solana_client::rpc_config::{RpcAccountInfoConfig, RpcTransactionLogsFilter, RpcTransactionLogsConfig};
+use solana_program::pubkey::Pubkey;
 
 use crate::{
     analyze::process_block_stream, client::SolClient,
@@ -69,4 +72,37 @@ pub(crate) fn test_get_block_production(client: &SolClient, logging: bool) {
         }
         // TODO - more here
     }
+}
+
+pub(crate) fn test_basic_subscriptions(client: &mut SolClient) {
+    println!("rpc websocket url:  {}", &client.ws_url);
+    match client.slot_subscribe() {
+        Ok(_) => { println!("slot_subscribe() success") },
+        Err(e) => log_err(&e),
+    };
+    match client.logs_subscribe(RpcTransactionLogsFilter::All, RpcTransactionLogsConfig { commitment: None } ) {
+        Ok(_) => { println!("logs_subscribe() success") },
+        Err(e) => log_err(&e),
+    };
+    // actually this won't do shit without a real key
+    /*
+    match client.account_subscribe(&Pubkey::new(&[0; 32]), None) {
+        Ok(_sub) => {
+            println!("successfully called account_subscribe()");
+        },
+        Err(e) => log_err(&e),
+    }
+    */
+
+    let ms10 = Duration::from_millis(10);
+    let mins = Duration::from_millis(1000 * 60 * 5);
+    let start = Instant::now();
+    while Instant::now() - start < mins {
+        client.try_recv_all();
+        thread::sleep(ms10);
+    }
+
+
+
+    println!("end test_basic_subscriptions()");
 }

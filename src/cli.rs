@@ -37,6 +37,7 @@ pub(crate) fn get_cli_args() -> CliArguments {
              .short("r")
              .takes_value(true)
              .required_if("task", SCRAPE_BLOCKS_TASK)
+             .required_if("task", SUB_BASIC_TASK)
              .help("URL of the Solana RPC node to use, or: 1 of 'dev','test','main'"))
     .arg(Arg::with_name("source")
              .long("source")
