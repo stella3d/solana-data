@@ -1,6 +1,7 @@
-use std::{collections::{HashSet}, sync::Arc, path::Path, ops::Deref};
+use std::{collections::{HashSet}, sync::{Arc, mpsc::{Receiver, TryRecvError}}, path::Path, ops::Deref, fmt::Debug};
 
-use solana_client::{self, rpc_client::RpcClient, client_error::{ClientError}, rpc_response::RpcBlockProduction, pubsub_client::{SlotsSubscription, PubsubClientError, self, PubsubClient, LogsSubscription, PubsubAccountClientSubscription, AccountSubscription}, rpc_config::{RpcTransactionLogsFilter, RpcTransactionLogsConfig, RpcAccountInfoConfig}};
+use serde::de::DeserializeOwned;
+use solana_client::{self, rpc_client::RpcClient, client_error::{ClientError}, rpc_response::RpcBlockProduction, pubsub_client::{SlotsSubscription, PubsubClientError, self, PubsubClient, LogsSubscription, PubsubAccountClientSubscription, AccountSubscription, ProgramSubscription, PubsubClientSubscription}, rpc_config::{RpcTransactionLogsFilter, RpcTransactionLogsConfig, RpcAccountInfoConfig}};
 use solana_program::{pubkey::Pubkey, clock::Slot};
 use solana_sdk::{transaction::Transaction, account::Account};
 use solana_transaction_status::{EncodedTransactionWithStatusMeta, UiTransactionEncoding, EncodedConfirmedBlock};
@@ -15,8 +16,9 @@ pub struct SolClient {
     pub ws_url: String,
 
     slots_sub: Option<SlotsSubscription>,
-    acct_sub: Option<AccountSubscription>,
     logs_sub: Option<LogsSubscription>,
+    acct_sub: Option<AccountSubscription>,          // TODO - make this a Vec of subs
+    program_sub: Option<ProgramSubscription>,       // TODO - make this a Vec of subs
 
     pub t_key_set: HashSet<Pubkey>,
     pub t_key_vec: Vec<Pubkey>,
@@ -40,6 +42,7 @@ impl SolClient {
             slots_sub: None,
             acct_sub: None,
             logs_sub: None,
+            program_sub: None,
             t_key_set: HashSet::<Pubkey>::with_capacity(Self::TMP_BUFFER_LEN), 
             t_key_vec: Vec::<Pubkey>::with_capacity(Self::TMP_BUFFER_LEN), 
             tx_accounts: Vec::<Account>::with_capacity(Self::TMP_BUFFER_LEN),
@@ -147,33 +150,39 @@ impl SolClient {
         }
     }
 
+    pub fn program_subscribe(&mut self, key: &Pubkey) -> Result<(), PubsubClientError> {
+        match PubsubClient::program_subscribe(&self.ws_url, key, None) {
+            Ok(sub) => {
+                self.program_sub = Some(sub);
+                Ok(())
+            },
+            Err(e) => Err(e),
+        }
+    }
+
+    fn try_recv<T: DeserializeOwned + Debug>(sub: &Option<(PubsubClientSubscription<T>, Receiver<T>)>) -> Result<T, Option<TryRecvError>> {
+        if let Some(s) = sub {
+            match s.1.try_recv() {
+                Ok(data) => Ok(data),
+                Err(e) => Err(Some(e)),
+            }
+        } 
+        else { Err(None) }
+    }
+
+    fn try_recv_log<T: DeserializeOwned + Debug>(sub: &Option<(PubsubClientSubscription<T>, Receiver<T>)>, label: &str) {
+        match Self::try_recv(sub) {
+            Ok(data) => { println!("{}:\n{:?}", label, data) },
+            Err(None) => {},
+            // only the less common disconnect error is relevant
+            Err(_) => { /*log_err(&(e.unwrap()))*/ },
+        };
+    }
+
     pub fn try_recv_all(&self) {
-        match &self.slots_sub {
-            Some(s) => {
-                match s.1.try_recv() {
-                    Ok(slot) => { println!("slot:\n{:?}", slot) },
-                    Err(_) => {},
-                }
-            },
-            None => {},
-        };
-        match &self.logs_sub {
-            Some(s) => {
-                match s.1.try_recv() {
-                    Ok(r) => { println!("log:\n{:?}\n", r.value) },
-                    Err(_) => {},
-                }
-            },
-            None => {},
-        };
-        match &self.acct_sub {
-            Some(s) => {
-                match s.1.try_recv() {
-                    Ok(r) => { println!("account:\n{:?}", r.value) },
-                    Err(_) => {},
-                }
-            },
-            None => {},
-        };
+        Self::try_recv_log(&self.slots_sub, "slot");
+        Self::try_recv_log(&self.logs_sub, "log");
+        Self::try_recv_log(&self.acct_sub, "account");
+        Self::try_recv_log(&self.program_sub, "program");
     }
 }
