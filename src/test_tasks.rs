@@ -1,4 +1,4 @@
-use std::{fs::{self, read_dir}, path::{PathBuf}, time::{Instant, Duration}, thread};
+use std::{fs::{self, read_dir}, path::{PathBuf}, time::{Instant, Duration}, thread, str::FromStr};
 
 use solana_client::rpc_config::{RpcAccountInfoConfig, RpcTransactionLogsFilter, RpcTransactionLogsConfig};
 use solana_program::pubkey::Pubkey;
@@ -84,15 +84,12 @@ pub(crate) fn test_basic_subscriptions(client: &mut SolClient) {
         Ok(_) => { println!("logs_subscribe() success") },
         Err(e) => log_err(&e),
     };
-    // actually this won't do shit without a real key
-    /*
-    match client.account_subscribe(&Pubkey::new(&[0; 32]), None) {
-        Ok(_sub) => {
-            println!("successfully called account_subscribe()");
-        },
+
+    let subscribe_to_prog = Pubkey::from_str("2yqG9bzKHD59MxD9q7ExLvnDhNycB3wkvKXFQSpBoiaE").unwrap();
+    match client.program_subscribe(&subscribe_to_prog) {
+        Ok(_) => { println!("program_subscribe() success") },
         Err(e) => log_err(&e),
     }
-    */
 
     let ms10 = Duration::from_millis(10);
     let mins = Duration::from_millis(1000 * 60 * 5);
@@ -101,8 +98,6 @@ pub(crate) fn test_basic_subscriptions(client: &mut SolClient) {
         client.try_recv_all();
         thread::sleep(ms10);
     }
-
-
 
     println!("end test_basic_subscriptions()");
 }
